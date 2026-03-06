@@ -4,12 +4,14 @@ const registrationSchema = new mongoose.Schema({
 
   userId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "User"
+    ref: "User",
+    required: true
   },
 
   eventId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "Event"
+    ref: "Event",
+    required: true
   },
 
   attendanceStatus: {
