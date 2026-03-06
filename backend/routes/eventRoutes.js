@@ -8,8 +8,9 @@ const {
 } = require("../controllers/eventController");
 
 const authMiddleware = require("../middleware/authMiddleware");
+const roleMiddleware = require("../middleware/roleMiddleware");
 
-router.post("/", authMiddleware, createEvent);
+router.post("/", authMiddleware, roleMiddleware(["organizer", "admin"]), createEvent);
 router.get("/", getEvents);
 router.get("/:id", getEventById);
 

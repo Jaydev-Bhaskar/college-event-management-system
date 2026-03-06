@@ -32,10 +32,12 @@ exports.approveRequest = async (req, res) => {
     request.status = "approved";
     await request.save();
 
-    // update user role
-    await User.findByIdAndUpdate(request.userId, {
-      role: "organizer"
-    });
+    // update user role only if they are a student
+    const user = await User.findById(request.userId);
+    if (user && user.role === "student") {
+      user.role = "organizer";
+      await user.save();
+    }
 
     res.json({ message: "Organizer approved" });
 

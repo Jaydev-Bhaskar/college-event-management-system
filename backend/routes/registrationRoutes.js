@@ -4,12 +4,11 @@ const router = express.Router();
 const {
   registerForEvent,
   getMyRegistrations,
-  getEventParticipants
+  getEventParticipants,
+  markAttendance
 } = require("../controllers/registrationController");
 
 const authMiddleware = require("../middleware/authMiddleware");
-
-const { markAttendance } = require("../controllers/registrationController");
 
 router.post("/register", authMiddleware, registerForEvent);
 
