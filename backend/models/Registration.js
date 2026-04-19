@@ -20,8 +20,22 @@ const registrationSchema = new mongoose.Schema({
     default: "pending"
   },
 
+  attendanceMarkedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User"
+  },
+
+  attendanceTimestamp: {
+    type: Date
+  },
+
   qrCode: {
     type: String
+  },
+
+  feedbackSubmitted: {
+    type: Boolean,
+    default: false
   },
 
   certificateGenerated: {
@@ -30,5 +44,8 @@ const registrationSchema = new mongoose.Schema({
   }
 
 }, { timestamps: true });
+
+// One registration per user per event
+registrationSchema.index({ userId: 1, eventId: 1 }, { unique: true });
 
 module.exports = mongoose.model("Registration", registrationSchema);
