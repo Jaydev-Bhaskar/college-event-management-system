@@ -1,7 +1,6 @@
 const jwt = require("jsonwebtoken");
 const User = require("../models/User");
 const Event = require("../models/Event");
-const OrganizerRequest = require("../models/OrganizerRequest");
 
 const authMiddleware = async (req, res, next) => {
 
@@ -23,35 +22,44 @@ const authMiddleware = async (req, res, next) => {
       return res.status(401).json({ message: "User not found" });
     }
 
-    if (user.role === "organizer") {
+    // Organizer auto-revert with 30-day grace period
+    if (user.role === "organizer" && user.privileges && user.privileges.isOrganizer) {
       const now = new Date();
       const startOfDay = new Date(now);
       startOfDay.setUTCHours(0, 0, 0, 0);
 
-      const thirtyDaysAgo = new Date(now);
-      thirtyDaysAgo.setUTCDate(now.getUTCDate() - 30);
-
-      // Check for any recently approved matching requests or upcoming valid proposed dates
-      const activeRequests = await OrganizerRequest.countDocuments({
-        userId: user._id,
-        status: "approved",
-        $or: [
-          { proposedDate: { $gte: startOfDay } },
-          { proposedDate: null, updatedAt: { $gte: thirtyDaysAgo } },
-          { proposedDate: { $exists: false }, updatedAt: { $gte: thirtyDaysAgo } }
-        ]
-      });
-
-      // Check for strictly created events
-      const upcomingEvents = await Event.countDocuments({
+      // Check for any upcoming or in-progress events
+      const activeEvents = await Event.countDocuments({
         organizerId: user._id,
         date: { $gte: startOfDay }
       });
 
-      // If no events remaining and no valid active requests, revoke role
-      if (activeRequests === 0 && upcomingEvents === 0) {
-        user.role = "student";
-        await user.save();
+      if (activeEvents === 0) {
+        // No active events — check grace period
+        if (!user.privileges.organizerGraceStart) {
+          // Start grace period now
+          user.privileges.organizerGraceStart = now;
+          await user.save();
+        } else {
+          // Check if 30 days have passed since grace started
+          const graceDays = 30;
+          const graceEnd = new Date(user.privileges.organizerGraceStart);
+          graceEnd.setDate(graceEnd.getDate() + graceDays);
+
+          if (now > graceEnd) {
+            // Grace period expired — revert to base role
+            user.role = user.baseRole || "student";
+            user.privileges.isOrganizer = false;
+            user.privileges.organizerGraceStart = null;
+            await user.save();
+          }
+        }
+      } else {
+        // Has active events — clear any grace period
+        if (user.privileges.organizerGraceStart) {
+          user.privileges.organizerGraceStart = null;
+          await user.save();
+        }
       }
     }
 

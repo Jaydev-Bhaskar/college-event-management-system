@@ -5,7 +5,8 @@ const {
   registerForEvent,
   getMyRegistrations,
   getEventParticipants,
-  markAttendance
+  markAttendance,
+  markAttendanceByQR
 } = require("../controllers/registrationController");
 
 const authMiddleware = require("../middleware/authMiddleware");
@@ -17,5 +18,7 @@ router.get("/my-events", authMiddleware, getMyRegistrations);
 router.get("/event/:eventId", authMiddleware, getEventParticipants);
 
 router.post("/attendance", authMiddleware, markAttendance);
+
+router.post("/attendance/qr", authMiddleware, markAttendanceByQR);
 
 module.exports = router;
