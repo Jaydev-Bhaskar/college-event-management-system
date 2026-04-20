@@ -4,14 +4,17 @@ const OrganizerRequest = require("../models/OrganizerRequest");
 exports.createRequest = async (req, res) => {
   try {
 
-    const { eventTitle, eventDescription, proposedDate, expectedParticipants } = req.body;
+    const { title, description, category, date, time, location, maxParticipants } = req.body;
 
     const request = new OrganizerRequest({
       userId: req.user.id,
-      eventTitle,
-      eventDescription,
-      proposedDate,
-      expectedParticipants
+      title,
+      description,
+      category,
+      date,
+      time,
+      location,
+      maxParticipants
     });
 
     await request.save();

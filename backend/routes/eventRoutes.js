@@ -6,6 +6,7 @@ const {
   getEvents,
   getEventById,
   updateEvent,
+  deleteEvent,
   getMyEvents,
   addEventManager,
   removeEventManager
@@ -22,8 +23,9 @@ router.post("/", authMiddleware, roleMiddleware(["organizer", "admin"]), createE
 router.get("/", getEvents);
 router.get("/:id", getEventById);
 
-// Update event
+// Update and Delete event
 router.put("/:id", authMiddleware, roleMiddleware(["organizer", "admin"]), updateEvent);
+router.delete("/:id", authMiddleware, roleMiddleware(["organizer", "admin"]), deleteEvent);
 
 // Event manager management
 router.post("/:id/managers", authMiddleware, roleMiddleware(["organizer", "admin"]), addEventManager);

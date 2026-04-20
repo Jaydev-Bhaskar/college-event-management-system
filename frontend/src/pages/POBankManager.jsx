@@ -11,6 +11,9 @@ export default function POBankManager() {
   const { user } = useAuth();
   const [poBank, setPOBank] = useState({ pos: [], psos: [] });
   const [activeTab, setActiveTab] = useState('po');
+
+  const isSuperAdmin = (!user || !user.department) || user.department === 'Global' || user.department === 'Central';
+  const [selectedDept, setSelectedDept] = useState((user && user.department) ? user.department : 'Global');
   const [showAddModal, setShowAddModal] = useState(false);
   const [newCode, setNewCode] = useState('');
   const [newDescription, setNewDescription] = useState('');
@@ -35,11 +38,12 @@ export default function POBankManager() {
 
   useEffect(() => {
     loadPOBank();
-  }, []);
+  }, [selectedDept]);
 
   const loadPOBank = async () => {
     try {
-      const res = await getPOBank(user.department);
+      setLoading(true);
+      const res = await getPOBank(selectedDept);
       setPOBank(res.data);
     } catch (err) {
       console.error('Failed to load PO bank:', err);
@@ -52,7 +56,7 @@ export default function POBankManager() {
     e.preventDefault();
     try {
       await addPO({
-        department: user.department,
+        department: selectedDept,
         code: newCode,
         description: newDescription,
         type: activeTab === 'pso' ? 'pso' : 'po'
@@ -70,7 +74,7 @@ export default function POBankManager() {
     if (!confirm(`Remove ${code}? This may affect existing feedback forms.`)) return;
     try {
       await removePO({
-        department: user.department,
+        department: selectedDept,
         code,
         type: activeTab === 'pso' ? 'pso' : 'po'
       });
@@ -87,10 +91,30 @@ export default function POBankManager() {
     <div className="dashboard-layout">
       <Sidebar links={sidebarLinks} />
       <main className="dashboard-content">
-        <div className="dashboard-header">
+        <div className="dashboard-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div>
             <h1>PO/PSO Bank</h1>
-            <p className="text-secondary">Manage Programme Outcomes for {user.department || 'your department'}</p>
+            <p className="text-secondary">
+              {isSuperAdmin ? 'Global Admin overrides and access' : `Manage Programme Outcomes for ${selectedDept}`}
+            </p>
+          </div>
+          <div>
+            <select
+              style={{ padding: '0.5rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)', background: !isSuperAdmin ? 'var(--bg-body)' : 'white' }}
+              value={selectedDept}
+              onChange={(e) => setSelectedDept(e.target.value)}
+              disabled={!isSuperAdmin}
+            >
+              <option value="Computer Engineering">Computer Engineering</option>
+              <option value="Mechanical Engineering">Mechanical Engineering</option>
+              <option value="Electronics and Telecommunication Engineering">Electronics and Telecommunication Engineering</option>
+              <option value="Information Technology">Information Technology</option>
+              <option value="Artificial Intelligence and Data Science">Artificial Intelligence and Data Science</option>
+              <option value="Electrical Engineering">Electrical Engineering</option>
+              <option value="MBA">MBA</option>
+              <option value="Civil Engineering">Civil Engineering</option>
+              <option value="Global">Global / Institutional</option>
+            </select>
           </div>
         </div>
 

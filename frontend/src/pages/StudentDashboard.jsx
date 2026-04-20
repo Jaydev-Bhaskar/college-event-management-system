@@ -1,23 +1,30 @@
 import { useState, useEffect } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import API from '../api/axios';
 import Sidebar from '../components/Sidebar';
 import StatsCard from '../components/StatsCard';
 import EventCard from '../components/EventCard';
-import {
-  LayoutDashboard, CalendarDays, QrCode, Search,
+import { LayoutDashboard, CalendarDays, QrCode, Search,
   Award, Zap, MapPin, Clock,
-  UserCircle, Calendar, Ticket, Download
+  UserCircle, Calendar, Ticket, Download, PlusCircle, HelpCircle, Upload, MessageSquare
 } from 'lucide-react';
 
 export default function StudentDashboard() {
   const { user } = useAuth();
   const { addToast } = useToast();
+  const navigate = useNavigate();
 
   const [registrations, setRegistrations] = useState([]);
   const [loading, setLoading] = useState(true);
+  
+  const [form, setForm] = useState({
+    title: '', description: '', category: '', date: '', time: '', location: '', maxParticipants: ''
+  });
+  const [requestLoading, setRequestLoading] = useState(false);
+
+  const categories = ['Technical', 'Cultural', 'Sports', 'Workshop', 'Seminar', 'Hackathon'];
 
   const sidebarLinks = [
     {
@@ -27,7 +34,14 @@ export default function StudentDashboard() {
         { path: '/dashboard/events', label: 'My Events', icon: <Calendar size={18} /> },
         { path: '/dashboard/tickets', label: 'QR Tickets', icon: <QrCode size={18} /> },
         { path: '/dashboard/certificates', label: 'Certificates', icon: <Award size={18} /> },
+        { path: '/dashboard/feedback', label: 'Pending Feedback', icon: <MessageSquare size={18} /> },
         { path: '/profile', label: 'Profile', icon: <UserCircle size={18} /> },
+      ]
+    },
+    {
+      title: 'ORGANIZER',
+      items: [
+        { path: '/dashboard/host', label: 'Host an Event', icon: <PlusCircle size={18} /> },
       ]
     }
   ];
@@ -46,9 +60,13 @@ export default function StudentDashboard() {
     fetchData();
   }, []);
 
-  const upcomingRegs = registrations.filter(
-    (r) => r.eventId && new Date(r.eventId.date) > new Date()
-  );
+  const upcomingRegs = registrations.filter((r) => {
+    if (!r.eventId || !r.eventId.date) return false;
+    const eventDate = new Date(r.eventId.date);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Reset time to start of day
+    return eventDate >= today;
+  });
   const attendedCount = registrations.filter(r => r.attendanceStatus === 'present').length;
 
   // Get the nearest upcoming registration for QR ticket display
@@ -58,16 +76,118 @@ export default function StudentDashboard() {
 
   const getDaysUntil = (d) => {
     if (!d) return '';
-    const diff = Math.ceil((new Date(d) - new Date()) / (1000 * 60 * 60 * 24));
+    const eventD = new Date(d);
+    const todayD = new Date();
+    eventD.setHours(0, 0, 0, 0);
+    todayD.setHours(0, 0, 0, 0);
+    const diff = Math.round((eventD - todayD) / (1000 * 60 * 60 * 24));
+    
     if (diff === 0) return 'TODAY';
     if (diff === 1) return 'TOMORROW';
+    if (diff < 0) return 'COMPLETED';
     return `IN ${diff} DAYS`;
+  };
+
+  const handleRequestSubmit = async (e) => {
+    e.preventDefault();
+    if (!form.title || !form.description || !form.date) {
+      addToast('Title, description, and date are required', 'warning');
+      return;
+    }
+    setRequestLoading(true);
+    try {
+      await API.post('/organizer/request', {
+        ...form,
+        maxParticipants: form.maxParticipants ? Number(form.maxParticipants) : undefined,
+      });
+      addToast('Organizer request submitted successfully! Pending admin approval.', 'success');
+      setForm({ title: '', description: '', category: '', date: '', time: '', location: '', maxParticipants: '' });
+    } catch (err) {
+      addToast(err.response?.data?.message || 'Failed to submit request', 'error');
+    } finally {
+      setRequestLoading(false);
+    }
   };
 
   const location = useLocation();
   const path = location.pathname;
 
   const renderContent = () => {
+    if (path === '/dashboard/host') {
+      return (
+        <div style={{ maxWidth: 800, margin: '0 auto' }}>
+          <div>
+            <h1 style={{ fontSize: '1.75rem', fontWeight: 800, marginBottom: '0.2rem' }}>Host a New Event</h1>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
+              Submit a proposal to host an event on campus. Provide all necessary information to help students discover your event.
+            </p>
+          </div>
+          <div className="glass-card-static" style={{ padding: '2rem' }}>
+            <div style={{ border: '2px dashed var(--border)', borderRadius: 'var(--radius-lg)', padding: '1.5rem', textAlign: 'center', marginBottom: '1.25rem', background: 'var(--bg-body)' }}>
+              <Upload size={28} style={{ color: 'var(--primary)', marginBottom: '0.5rem', display: 'inline-block' }} />
+              <p style={{ fontWeight: 500, fontSize: '0.85rem' }}>Click to upload or drag and drop Event Poster</p>
+              <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>SVG, PNG, JPG or GIF (max. 10MB)</p>
+            </div>
+
+            <form onSubmit={handleRequestSubmit}>
+              <div className="form-group">
+                <label className="form-label">Event Title</label>
+                <input className="form-input" placeholder="e.g. Annual Tech Symposium 2024" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} required />
+              </div>
+              <div className="form-group">
+                <label className="form-label">Description</label>
+                <textarea className="form-input" rows="4" placeholder="Tell everyone what the event is about..." value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} required />
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div className="form-group">
+                  <label className="form-label">Category</label>
+                  <select className="form-input" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })}>
+                    <option value="">Select a category</option>
+                    {categories.map(c => <option key={c} value={c}>{c}</option>)}
+                  </select>
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Max Participants</label>
+                  <input type="number" className="form-input" placeholder="50" value={form.maxParticipants} onChange={(e) => setForm({ ...form, maxParticipants: e.target.value })} />
+                </div>
+              </div>
+              <h3 style={{ fontWeight: 700, marginBottom: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.95rem', marginTop: '0.5rem' }}>
+                <MapPin size={16} style={{ color: 'var(--danger)' }} /> Time & Location
+              </h3>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                <div className="form-group">
+                  <label className="form-label">Date</label>
+                  <input type="date" className="form-input" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} required />
+                </div>
+                <div className="form-group">
+                  <label className="form-label">Time</label>
+                  <input type="time" className="form-input" value={form.time} onChange={(e) => setForm({ ...form, time: e.target.value })} />
+                </div>
+              </div>
+              <div className="form-group mb-4">
+                <label className="form-label">Location</label>
+                <input className="form-input" placeholder="e.g. Main Auditorium, Block C" value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} />
+              </div>
+
+              <div style={{ background: 'var(--warning-light)', color: 'var(--warning)', padding: '1rem', borderRadius: 'var(--radius-md)', fontSize: '0.85rem', display: 'flex', gap: '0.75rem', marginTop: '1rem', marginBottom: '1.5rem' }}>
+                <HelpCircle size={18} style={{ flexShrink: 0 }} />
+                <span>
+                  By submitting this request, your Hod/Admin will review your proposal. Upon approval, you will be granted full Organizer privileges for this Event to manage and view analytics.
+                </span>
+              </div>
+              
+              <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
+                <button type="button" className="btn btn-ghost" onClick={() => navigate('/dashboard')}>Cancel</button>
+                <button type="submit" className="btn btn-primary" disabled={requestLoading}>
+                  {requestLoading ? 'Submitting Proposal...' : <>Submit Proposal</>}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      );
+    }
+
     if (path === '/dashboard/events') {
       return (
         <div>
@@ -176,15 +296,40 @@ export default function StudentDashboard() {
       );
     }
     
-    if (path === '/dashboard/certificates') {
+
+    if (path === '/dashboard/feedback') {
+      const pastEvents = registrations.filter((r) => {
+        if (!r.eventId || !r.eventId.date) return false;
+        const eventDate = new Date(r.eventId.date);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        return eventDate < today; 
+      });
+
       return (
         <div>
-          <h2 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '1rem' }}>Certificates</h2>
-          <div className="glass-card-static empty-state" style={{ padding: '3rem 2rem' }}>
-            <Award size={48} />
-            <h3>No certificates earned yet</h3>
-            <p>Attend events and participate to earn certificates.</p>
-          </div>
+          <h2 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '1rem' }}>Pending Feedback Forms</h2>
+          {pastEvents.length === 0 ? (
+           <div className="glass-card-static empty-state" style={{ padding: '3rem 2rem' }}>
+             <MessageSquare size={48} />
+             <h3>No pending feedback forms</h3>
+             <p>Your feedback forms will appear here after your registered events conclude.</p>
+           </div>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              {pastEvents.map(r => (
+                <div key={r._id} className="glass-card-static" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '1.5rem' }}>
+                  <div>
+                    <h3 style={{ fontWeight: 700, fontSize: '1rem', marginBottom: '0.25rem' }}>{r.eventId.title}</h3>
+                    <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Event concluded on {new Date(r.eventId.date).toLocaleDateString()}</p>
+                  </div>
+                  <button className="btn btn-primary" onClick={() => window.location.href = `/feedback/student/${r.eventId._id}`}>
+                    Submit Feedback
+                  </button>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       );
     }

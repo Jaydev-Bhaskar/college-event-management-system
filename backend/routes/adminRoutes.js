@@ -7,7 +7,8 @@ const {
   rejectRequest,
   getDashboardStats,
   getUsers,
-  getAllEvents
+  getAllEvents,
+  revokeOrganizerPrivilege
 } = require("../controllers/adminController");
 
 const authMiddleware = require("../middleware/authMiddleware");
@@ -23,6 +24,7 @@ router.post("/reject-request", authMiddleware, roleMiddleware(['admin']), reject
 
 // User management
 router.get("/users", authMiddleware, roleMiddleware(['admin']), getUsers);
+router.post("/revoke-organizer", authMiddleware, roleMiddleware(['admin']), revokeOrganizerPrivilege);
 
 // Event management (department-scoped)
 router.get("/events", authMiddleware, roleMiddleware(['admin']), getAllEvents);

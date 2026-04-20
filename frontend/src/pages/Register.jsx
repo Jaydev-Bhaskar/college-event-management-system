@@ -5,9 +5,14 @@ import { useToast } from '../context/ToastContext';
 import { User, Mail, Lock, ArrowRight, Building2, Hash, GraduationCap } from 'lucide-react';
 
 const departments = [
-  'Computer Science', 'Electrical Engineering', 'Mechanical Engineering',
-  'Civil Engineering', 'Electronics & Communication', 'Information Technology',
-  'Business Admin', 'Arts & Humanities', 'Physics', 'Mathematics', 'Chemistry', 'Biology'
+  'Computer Engineering',
+  'Mechanical Engineering',
+  'Electronics and Telecommunication Engineering',
+  'Information Technology',
+  'Artificial Intelligence and Data Science',
+  'Electrical Engineering',
+  'MBA',
+  'Civil Engineering'
 ];
 
 export default function Register() {

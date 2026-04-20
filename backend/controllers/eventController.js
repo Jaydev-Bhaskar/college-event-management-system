@@ -119,6 +119,24 @@ exports.updateEvent = async (req, res) => {
   }
 };
 
+// Delete event (Admin only or Event Owner)
+exports.deleteEvent = async (req, res) => {
+  try {
+    const event = await Event.findById(req.params.id);
+    if (!event) return res.status(404).json({ message: "Event not found" });
+
+    // Ensure user has permission
+    if (event.organizerId.toString() !== req.user.id && req.user.role !== "admin") {
+      return res.status(403).json({ message: "Not authorized to delete this event" });
+    }
+
+    await Event.findByIdAndDelete(req.params.id);
+    res.json({ message: "Event deleted successfully" });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
 
 // Get organizer's own events
 exports.getMyEvents = async (req, res) => {

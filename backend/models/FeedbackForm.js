@@ -8,7 +8,8 @@ const questionSchema = new mongoose.Schema({
     required: true
   },
   required: { type: Boolean, default: true },
-  options: [String] // For MCQ type questions
+  options: [String], // For MCQ type questions
+  mappedPO: { type: String } // To store PO or PSO mapping
 }, { _id: true });
 
 const sectionSchema = new mongoose.Schema({

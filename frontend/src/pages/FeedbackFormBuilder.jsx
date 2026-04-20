@@ -18,7 +18,7 @@ const QUESTION_TYPES = [
   { value: 'yes_no', label: 'Yes / No' }
 ];
 
-function QuestionEditor({ question, onChange, onRemove }) {
+function QuestionEditor({ question, onChange, onRemove, availablePOs = [], availablePSOs = [] }) {
   const updateField = (field, value) => {
     onChange({ ...question, [field]: value });
   };
@@ -46,6 +46,26 @@ function QuestionEditor({ question, onChange, onRemove }) {
             <option key={qt.value} value={qt.value}>{qt.label}</option>
           ))}
         </select>
+
+        {(availablePOs.length > 0 || availablePSOs.length > 0) && (
+          <select 
+            value={question.mappedPO || ''} 
+            onChange={(e) => updateField('mappedPO', e.target.value)}
+            style={{ padding: '0.4rem 0.5rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', fontSize: '0.85rem' }}
+          >
+            <option value="">No PO/PSO Mapping</option>
+            {availablePOs.length > 0 && (
+              <optgroup label="Programme Outcomes">
+                {availablePOs.map(po => <option key={po.code} value={po.code}>{po.code}</option>)}
+              </optgroup>
+            )}
+            {availablePSOs.length > 0 && (
+              <optgroup label="Specific Outcomes">
+                {availablePSOs.map(pso => <option key={pso.code} value={pso.code}>{pso.code}</option>)}
+              </optgroup>
+            )}
+          </select>
+        )}
 
         <label className="fb-checkbox">
           <input type="checkbox" checked={question.required} onChange={(e) => updateField('required', e.target.checked)} />
@@ -106,6 +126,97 @@ function QuestionEditor({ question, onChange, onRemove }) {
   );
 }
 
+function POQuestionEditor({ question, onChange, onRemove, availablePOs = [], availablePSOs = [] }) {
+  const updateField = (field, value) => {
+    onChange({ ...question, [field]: value });
+  };
+  
+  const selectedPO = question.poCode || '';
+
+  return (
+    <div className="fb-question-card" style={{ borderLeft: '3px solid var(--accent)' }}>
+      <div className="fb-question-header">
+        <input
+          className="fb-question-input"
+          type="text"
+          placeholder="PO/PSO Question text..."
+          value={question.text}
+          onChange={(e) => updateField('text', e.target.value)}
+        />
+        <button className="fb-question-remove" onClick={onRemove} title="Remove question">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M18 6L6 18M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <div className="fb-question-options">
+        <select value={question.type} onChange={(e) => updateField('type', e.target.value)}>
+          <option value="mcq">Multiple Choice</option>
+          <option value="rating_1_5">Rating (1-5)</option>
+          <option value="short_text">Short Text</option>
+        </select>
+
+        <select 
+          value={selectedPO} 
+          onChange={(e) => updateField('poCode', e.target.value)}
+          style={{ padding: '0.4rem 0.5rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', fontSize: '0.85rem' }}
+        >
+          <option value="">Select PO/PSO</option>
+          {availablePOs.length > 0 && (
+            <optgroup label="Programme Outcomes">
+              {availablePOs.map(po => <option key={po.code} value={po.code}>{po.code}</option>)}
+            </optgroup>
+          )}
+          {availablePSOs.length > 0 && (
+            <optgroup label="Specific Outcomes">
+              {availablePSOs.map(pso => <option key={pso.code} value={pso.code}>{pso.code}</option>)}
+            </optgroup>
+          )}
+        </select>
+        
+        {/* Correct Answer Field for MCQs */}
+        {question.type === 'mcq' && (
+          <input
+            type="text"
+            placeholder="Correct Answer (for reports)"
+            value={question.answer || ''}
+            onChange={(e) => updateField('answer', e.target.value)}
+            style={{ padding: '0.4rem 0.5rem', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)', fontSize: '0.85rem', width: '200px' }}
+          />
+        )}
+      </div>
+
+      {question.type === 'mcq' && (
+        <div className="fb-mcq-options">
+          {(question.options || []).map((opt, i) => (
+            <div key={i} className="fb-mcq-option">
+              <span className="fb-mcq-bullet">○</span>
+              <input
+                type="text"
+                value={opt}
+                placeholder={`Option ${i + 1}`}
+                onChange={(e) => {
+                  const newOpts = [...(question.options || [])];
+                  newOpts[i] = e.target.value;
+                  updateField('options', newOpts);
+                }}
+              />
+              <button className="fb-mcq-remove" onClick={() => {
+                const newOpts = question.options.filter((_, idx) => idx !== i);
+                updateField('options', newOpts);
+              }}>&times;</button>
+            </div>
+          ))}
+          <button className="fb-mcq-add" onClick={() => updateField('options', [...(question.options || []), ''])}>
+            + Add option
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function FeedbackFormBuilder() {
   const { eventId } = useParams();
   const { user } = useAuth();
@@ -118,6 +229,7 @@ export default function FeedbackFormBuilder() {
   ]);
   const [poMapping, setPOMapping] = useState([]);
   const [psoMapping, setPSOMapping] = useState([]);
+  const [poQuestions, setPoQuestions] = useState([]);
   const [openEndedQuestions, setOpenEndedQuestions] = useState([
     { text: 'Any suggestions for improvement?', required: false }
   ]);
@@ -172,6 +284,7 @@ export default function FeedbackFormBuilder() {
           setSections(formRes.data.sections || []);
           setPOMapping(formRes.data.poMapping || []);
           setPSOMapping(formRes.data.psoMapping || []);
+          setPoQuestions(formRes.data.poQuestions || []);
           setOpenEndedQuestions(formRes.data.openEndedQuestions || []);
           setStatus(formRes.data.status || 'draft');
         }
@@ -247,6 +360,7 @@ export default function FeedbackFormBuilder() {
         sections,
         poMapping,
         psoMapping,
+        poQuestions,
         openEndedQuestions,
         status: publishStatus || status
       };
@@ -300,6 +414,33 @@ export default function FeedbackFormBuilder() {
           </div>
         </div>
 
+        {status === 'published' && (
+          <div className="fb-section-card" style={{ borderLeft: '4px solid var(--brand-primary)', marginBottom: '1.5rem' }}>
+            <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', margin: 0, marginBottom: '0.5rem' }}>
+               Share Feedback Links
+            </h3>
+            <p className="text-secondary" style={{ marginBottom: '1rem', fontSize: '0.9rem' }}>
+              The feedback form is published. Use these links to distribute to participants and experts. Students can also access it on their dashboards.
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', background: 'var(--bg-base)', padding: '0.75rem 1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }}>
+                <div style={{ flex: 1 }}>
+                  <strong style={{ display: 'block', fontSize: '0.9rem', marginBottom: '0.25rem' }}>Student Feedback Link</strong>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{window.location.origin}/feedback/student/{eventId}</div>
+                </div>
+                <button className="btn-secondary btn-sm" onClick={() => {navigator.clipboard.writeText(`${window.location.origin}/feedback/student/${eventId}`); alert('Copied!');}}>Copy Link</button>
+              </div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', background: 'var(--bg-base)', padding: '0.75rem 1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }}>
+                <div style={{ flex: 1 }}>
+                  <strong style={{ display: 'block', fontSize: '0.9rem', marginBottom: '0.25rem' }}>Expert Temporary Login Link</strong>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{window.location.origin}/expert/login?eventId={eventId}</div>
+                </div>
+                <button className="btn-secondary btn-sm" onClick={() => {navigator.clipboard.writeText(`${window.location.origin}/expert/login?eventId=${eventId}`); alert('Copied!');}}>Copy Link</button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* PO/PSO Mapping */}
         {(availablePOs.length > 0 || availablePSOs.length > 0) && (
           <div className="fb-section-card fb-po-section">
@@ -344,6 +485,39 @@ export default function FeedbackFormBuilder() {
           </div>
         )}
 
+        {/* PO/PSO Specific Questions */}
+        <div className="fb-section-card">
+          <div className="fb-section-header">
+            <h2 className="fb-section-title" style={{ margin: 0 }}>PO/PSO Specific Questions</h2>
+            <button className="btn-secondary" onClick={() => setPoQuestions([...poQuestions, { text: '', type: 'mcq', poCode: '', options: [] }])}>
+              + Add PO Question
+            </button>
+          </div>
+          <p className="text-secondary" style={{ marginBottom: '1.5rem', fontSize: '0.9rem' }}>
+            These questions specifically evaluate selected POs and PSOs.
+          </p>
+
+          {poQuestions.map((q, qIdx) => (
+            <POQuestionEditor
+              key={`poq_${qIdx}`}
+              question={q}
+              onChange={(updated) => {
+                const newQ = [...poQuestions];
+                newQ[qIdx] = updated;
+                setPoQuestions(newQ);
+              }}
+              onRemove={() => setPoQuestions(poQuestions.filter((_, i) => i !== qIdx))}
+              availablePOs={availablePOs}
+              availablePSOs={availablePSOs}
+            />
+          ))}
+          {poQuestions.length === 0 && (
+            <div style={{ textAlign: 'center', padding: '2rem', border: '1px dashed var(--border)', borderRadius: 'var(--radius-md)', color: 'var(--text-secondary)' }}>
+              No PO/PSO specific questions added yet.
+            </div>
+          )}
+        </div>
+
         {/* Sections */}
         {sections.map((section, sIdx) => (
           <div key={sIdx} className="fb-section-card">
@@ -368,6 +542,8 @@ export default function FeedbackFormBuilder() {
                 question={q}
                 onChange={(updated) => updateQuestion(sIdx, qIdx, updated)}
                 onRemove={() => removeQuestion(sIdx, qIdx)}
+                availablePOs={availablePOs}
+                availablePSOs={availablePSOs}
               />
             ))}
 
