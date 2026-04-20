@@ -7,7 +7,7 @@ import Sidebar from '../components/Sidebar';
 import {
   LayoutDashboard, Users, Calendar, BarChart3, Settings, Search,
   CheckCircle2, XCircle, Clock, FileText, Bell, Moon,
-  UserPlus, ShieldCheck, MapPin
+  UserPlus, ShieldCheck, MapPin, Trash2, ShieldAlert
 } from 'lucide-react';
 
 export default function AdminDashboard() {
@@ -16,6 +16,7 @@ export default function AdminDashboard() {
 
   const [requests, setRequests] = useState([]);
   const [events, setEvents] = useState([]);
+  const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(null);
 
@@ -43,12 +44,14 @@ export default function AdminDashboard() {
 
   const fetchAll = async () => {
     try {
-      const [reqRes, evtRes] = await Promise.all([
+      const [reqRes, evtRes, usrRes] = await Promise.all([
         API.get('/admin/organizer-requests'),
         API.get('/events'),
+        API.get('/admin/users'),
       ]);
       setRequests(reqRes.data);
       setEvents(evtRes.data);
+      setStudents(usrRes.data);
     } catch (err) {
       console.error(err);
     } finally { setLoading(false); }
@@ -76,9 +79,39 @@ export default function AdminDashboard() {
     } finally { setActionLoading(null); }
   };
 
+  const handleRevokePrivilege = async (userId) => {
+    if (!window.confirm("Are you sure you want to revoke this student's organizer privileges?")) return;
+    setActionLoading(userId);
+    try {
+      await API.post('/admin/revoke-organizer', { userId });
+      addToast('Organizer privilege revoked.', 'success');
+      fetchAll();
+    } catch (err) {
+      addToast(err.response?.data?.message || 'Failed to revoke privilege', 'error');
+    } finally { setActionLoading(null); }
+  };
+
+  const handleDeleteEvent = async (eventId) => {
+    if (!window.confirm("Are you sure you want to permanently delete this event? This cannot be undone.")) return;
+    setActionLoading(eventId);
+    try {
+      await API.delete(`/events/${eventId}`);
+      addToast('Event deleted successfully', 'success');
+      fetchAll();
+    } catch (err) {
+      addToast(err.response?.data?.message || 'Failed to delete event', 'error');
+    } finally { setActionLoading(null); }
+  };
+
   const pendingRequests = requests.filter(r => r.status === 'pending');
   const approvedRequests = requests.filter(r => r.status === 'approved');
-  const activeEvents = events.filter(e => new Date(e.date) > new Date());
+  const activeEvents = events.filter(e => {
+    if (!e.date) return false;
+    const eventDate = new Date(e.date);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    return eventDate >= today;
+  });
 
   const formatDate = (d) => d ? new Date(d).toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }) : 'TBD';
 
@@ -144,8 +177,8 @@ export default function AdminDashboard() {
                           </td>
                           <td>{req.userId?.department || 'Not specified'}</td>
                           <td>
-                            <div style={{ fontWeight: 500 }}>{req.eventTitle}</div>
-                            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{req.eventDescription?.slice(0, 30)}</div>
+                            <div style={{ fontWeight: 500 }}>{req.title}</div>
+                            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{req.description?.slice(0, 30)}</div>
                           </td>
                           <td>{formatDate(req.createdAt)}</td>
                           <td>
@@ -215,6 +248,15 @@ export default function AdminDashboard() {
                     }}>
                       {formatDate(evt.date)}
                     </span>
+                    <button 
+                      className="btn-icon" 
+                      onClick={() => handleDeleteEvent(evt._id)}
+                      disabled={actionLoading === evt._id}
+                      title="Delete Event"
+                      style={{ position: 'absolute', top: 8, right: 8, background: 'var(--danger)', color: 'white', border: 'none', padding: '0.35rem', borderRadius: 'var(--radius-sm)' }}
+                    >
+                      <Trash2 size={14} />
+                    </button>
                   </div>
                   <div className="event-card-body" style={{ padding: '1rem' }}>
                     <h3 className="event-card-title" style={{ fontSize: '1.05rem', marginBottom: '0.5rem' }}>{evt.title}</h3>
@@ -236,14 +278,102 @@ export default function AdminDashboard() {
           <div>
             <h1 style={{ fontSize: '1.75rem', fontWeight: 800, marginBottom: '0.2rem' }}>Student Directory</h1>
             <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
-              View and manage registered students.
+              View and manage registered students within {user.department || 'the system'}.
             </p>
           </div>
-          <div className="glass-card-static empty-state" style={{ padding: '3rem 2rem' }}>
-            <Users size={48} />
-            <h3>Student Directory</h3>
-            <p>Full student directory and management coming soon.</p>
+          <div className="glass-card-static" style={{ overflow: 'auto' }}>
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Student</th>
+                  <th>Student ID</th>
+                  <th>Role</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {students.map((student) => (
+                  <tr key={student._id}>
+                    <td>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
+                        <div className="participant-avatar" style={{ width: 32, height: 32, fontSize: '0.7rem', background: '#DBEAFE', color: '#2563EB' }}>
+                          {student.name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                        </div>
+                        <div>
+                          <div style={{ fontWeight: 600, fontSize: '0.875rem' }}>{student.name}</div>
+                          <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>{student.email}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td>{student._id.slice(-8)}</td>
+                    <td>
+                      {student.role === 'admin' ? (
+                        <span className="badge badge-info">Admin</span>
+                      ) : student.role === 'organizer' || student.privileges?.isOrganizer ? (
+                        <span className="badge badge-warning">Organizer</span>
+                      ) : (
+                        <span className="badge badge-success">Student</span>
+                      )}
+                    </td>
+                    <td>
+                      {student.role !== 'admin' && (student.role === 'organizer' || student.privileges?.isOrganizer) && (
+                        <button 
+                          className="btn btn-sm" 
+                          style={{ background: 'var(--danger-light)', color: 'var(--danger)', fontSize: '0.75rem' }}
+                          onClick={() => handleRevokePrivilege(student._id)}
+                          disabled={actionLoading === student._id}
+                        >
+                          <ShieldAlert size={12} /> Revoke
+                        </button>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
+        </>
+      );
+    }
+
+    if (path === '/admin/reports') {
+      return (
+        <>
+          <div>
+            <h1 style={{ fontSize: '1.75rem', fontWeight: 800, marginBottom: '0.2rem' }}>Department Event Reports</h1>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
+              Access feedback, mapping, and PO/PSO analytics for all events hosted within {user.department || 'the system'}.
+            </p>
+          </div>
+          {events.length === 0 ? (
+            <div className="glass-card-static empty-state" style={{ padding: '3rem 2rem' }}>
+              <FileText size={48} />
+              <h3>No Reports Available</h3>
+              <p>Reports will generate here once events have concluded.</p>
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.25rem' }}>
+              {events.map((evt) => (
+                <div key={evt._id} className="event-card" style={{ display: 'flex', flexDirection: 'column' }}>
+                  <div className="event-card-body" style={{ padding: '1.5rem', flex: 1 }}>
+                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
+                      <FileText size={24} style={{ color: 'var(--primary)' }} />
+                      <span className="badge badge-info">{formatDate(evt.date)}</span>
+                    </div>
+                    <h3 className="event-card-title" style={{ fontSize: '1.1rem', marginBottom: '0.5rem' }}>{evt.title}</h3>
+                    <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
+                      {evt.description?.slice(0, 60)}...
+                    </p>
+                  </div>
+                  <div style={{ padding: '1rem', borderTop: '1px solid var(--border)', background: 'var(--bg-body)' }}>
+                    <button className="btn btn-primary" style={{ width: '100%', fontSize: '0.85rem' }}>
+                      View Full Analysis
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </>
       );
     }

@@ -7,20 +7,32 @@ const organizerRequestSchema = new mongoose.Schema({
     ref: "User"
   },
 
-  eventTitle: {
+  title: {
     type: String,
     required: true
   },
 
-  eventDescription: {
+  description: {
     type: String
   },
 
-  proposedDate: {
+  category: {
+    type: String
+  },
+
+  date: {
     type: Date
   },
 
-  expectedParticipants: {
+  time: {
+    type: String
+  },
+
+  location: {
+    type: String
+  },
+
+  maxParticipants: {
     type: Number
   },
 

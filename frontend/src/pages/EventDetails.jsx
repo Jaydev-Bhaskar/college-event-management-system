@@ -44,7 +44,7 @@ export default function EventDetails() {
     }
     setRegLoading(true);
     try {
-      const res = await API.post(`/registrations/register/${id}`);
+      const res = await API.post('/registrations/register', { eventId: id });
       setRegistration(res.data.registration);
       addToast('Registered successfully! 🎉', 'success');
     } catch (err) {

@@ -17,7 +17,9 @@ import POBankManager from './pages/POBankManager';
 import FeedbackFormBuilder from './pages/FeedbackFormBuilder';
 import SystemSettings from './pages/SystemSettings';
 import ExpertDashboard from './pages/ExpertDashboard';
+import ExpertLogin from './pages/ExpertLogin';
 import AdminSetup from './pages/AdminSetup';
+import StudentFeedbackForm from './pages/StudentFeedbackForm';
 
 export default function App() {
   return (
@@ -36,7 +38,8 @@ export default function App() {
             {/* [DEV ONLY] Admin Setup */}
             <Route path="/setup" element={<AdminSetup />} />
 
-            {/* Expert Dashboard (expert JWT auth, no ProtectedRoute) */}
+            {/* Expert Dashboard & Login (expert JWT auth, no ProtectedRoute) */}
+            <Route path="/expert/login" element={<ExpertLogin />} />
             <Route path="/expert/dashboard" element={<ExpertDashboard />} />
 
             {/* Student / Teacher Dashboard — all sub-paths render same dashboard */}
@@ -57,17 +60,12 @@ export default function App() {
                 <OrganizerDashboard />
               </ProtectedRoute>
             } />
-            <Route path="/organizer/events" element={
-              <ProtectedRoute roles={['organizer']}>
-                <OrganizerDashboard />
+            <Route path="/feedback/student/:eventId" element={
+              <ProtectedRoute roles={['student', 'teacher', 'organizer', 'admin']}>
+                <StudentFeedbackForm />
               </ProtectedRoute>
             } />
-            <Route path="/organizer/participants" element={
-              <ProtectedRoute roles={['organizer']}>
-                <OrganizerDashboard />
-              </ProtectedRoute>
-            } />
-            <Route path="/organizer/analytics" element={
+            <Route path="/organizer/*" element={
               <ProtectedRoute roles={['organizer']}>
                 <OrganizerDashboard />
               </ProtectedRoute>

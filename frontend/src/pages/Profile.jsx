@@ -9,7 +9,7 @@ export default function Profile() {
   const { user } = useAuth();
 
   if (!user) return null;
-
+  
   const getRoleBadge = (role) => {
     switch (role) {
       case 'admin': return <span className="badge badge-danger">Admin</span>;
@@ -59,7 +59,7 @@ export default function Profile() {
             items: [
               { path: '/organizer', label: 'Dashboard', icon: <LayoutDashboard size={18} />, end: true },
               { path: '/organizer/events', label: 'My Events', icon: <CalendarIcon size={18} /> },
-              { path: '#create', label: 'Create Event', icon: <PlusCircle size={18} /> },
+              { path: '/organizer/create', label: 'Create Event', icon: <PlusCircle size={18} /> },
               { path: '/organizer/participants', label: 'Participants', icon: <Users size={18} /> },
               { path: '/organizer/analytics', label: 'Analytics', icon: <BarChart3 size={18} /> },
             ]
@@ -82,6 +82,12 @@ export default function Profile() {
               { path: '/dashboard/tickets', label: 'QR Tickets', icon: <QrCode size={18} /> },
               { path: '/dashboard/certificates', label: 'Certificates', icon: <Award size={18} /> },
               { path: '/profile', label: 'Profile', icon: <UserCircle size={18} /> },
+            ]
+          },
+          {
+            title: 'ORGANIZER',
+            items: [
+              { path: '/dashboard/host', label: 'Host an Event', icon: <PlusCircle size={18} /> },
             ]
           }
         ];

@@ -42,7 +42,21 @@ exports.approveRequest = async (req, res) => {
     request.status = "approved";
     await request.save();
 
-    // Update user — grant organizer privilege (base role unchanged)
+    // Auto-create the event based on the approved request
+    const newEvent = new Event({
+      title: request.title,
+      description: request.description,
+      category: request.category,
+      date: request.date,
+      time: request.time,
+      location: request.location,
+      maxParticipants: request.maxParticipants || null,
+      organizerId: request.userId,
+      status: "published" // Automatically publish so it shows up immediately
+    });
+    await newEvent.save();
+
+    // Update user — grant organizer privilege (base role unchanged) and assign the event
     const user = await User.findById(request.userId);
     if (user) {
       user.role = "organizer";
@@ -50,10 +64,13 @@ exports.approveRequest = async (req, res) => {
       user.privileges.isOrganizer = true;
       user.privileges.organizerGrantedAt = new Date();
       user.privileges.organizerGraceStart = null;
+      if (!user.privileges.managedEvents) user.privileges.managedEvents = [];
+      user.privileges.managedEvents.push(newEvent._id);
+      
       await user.save();
     }
 
-    res.json({ message: "Organizer approved" });
+    res.json({ message: "Organizer approved and event created!" });
 
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -152,6 +169,37 @@ exports.getAllEvents = async (req, res) => {
       .sort({ date: -1 });
 
     res.json(events);
+
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};
+
+
+// Revoke Organizer Privilege
+exports.revokeOrganizerPrivilege = async (req, res) => {
+  try {
+    const { userId } = req.body;
+    const userToRevoke = await User.findById(userId);
+
+    if (!userToRevoke) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    if (req.user.department && userToRevoke.department && req.user.department !== userToRevoke.department) {
+      return res.status(403).json({ message: "Cannot modify user in a different department" });
+    }
+
+    // Downgrade role to student and remove organizer privileges
+    userToRevoke.role = 'student';
+    if (userToRevoke.privileges) {
+      userToRevoke.privileges.isOrganizer = false;
+      userToRevoke.privileges.organizerGrantedAt = null;
+    }
+
+    await userToRevoke.save();
+
+    res.json({ message: "Organizer privilege revoked successfully", user: userToRevoke });
 
   } catch (error) {
     res.status(500).json({ error: error.message });
