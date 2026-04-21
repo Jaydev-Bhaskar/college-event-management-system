@@ -145,3 +145,30 @@ exports.deleteFeedbackForm = async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 };
+
+// PUBLIC: Get expert section of feedback form for an event (no auth required)
+exports.getExpertFormPublic = async (req, res) => {
+  try {
+    const { eventId } = req.params;
+
+    const form = await FeedbackForm.findOne({ eventId, status: "published" });
+    if (!form) {
+      return res.status(404).json({ message: "No published feedback form found for this event" });
+    }
+
+    if (!form.expertSection?.enabled || !form.expertSection?.questions?.length) {
+      return res.status(404).json({ message: "Expert feedback is not enabled for this event" });
+    }
+
+    const event = await Event.findById(eventId).select("title date location category");
+
+    res.json({
+      eventId,
+      event,
+      expertSection: form.expertSection,
+    });
+
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+};

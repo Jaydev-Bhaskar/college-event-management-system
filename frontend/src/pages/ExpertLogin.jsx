@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import API from '../api/axios';
 
 export default function ExpertLogin() {
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
+  const [searchParams] = useSearchParams();
+  const [username, setUsername] = useState(searchParams.get('username') || '');
+  const [password, setPassword] = useState(searchParams.get('password') || '');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
@@ -59,6 +60,7 @@ export default function ExpertLogin() {
             <div className="form-group">
               <label>Username</label>
               <input
+                className="form-input"
                 type="text"
                 placeholder="e.g. expert_cybersec_a1b2c3"
                 value={username}
@@ -70,6 +72,7 @@ export default function ExpertLogin() {
             <div className="form-group">
               <label>Password</label>
               <input
+                className="form-input"
                 type="password"
                 placeholder="Enter your temporary password"
                 value={password}
@@ -78,7 +81,7 @@ export default function ExpertLogin() {
               />
             </div>
 
-            <button type="submit" className="btn-primary btn-full" disabled={loading}>
+            <button type="submit" className="btn btn-primary btn-full" disabled={loading} style={{ width: '100%', borderRadius: 'var(--radius-md)', fontSize: '0.95rem' }}>
               {loading ? 'Signing in...' : 'Sign In as Expert'}
             </button>
           </form>

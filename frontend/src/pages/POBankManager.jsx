@@ -182,19 +182,21 @@ export default function POBankManager() {
                 <button className="modal-close" onClick={() => setShowAddModal(false)}>&times;</button>
               </div>
               <form onSubmit={handleAdd}>
-                <div className="form-group">
-                  <label>{label} Code</label>
+                <div className="form-group mb-3">
+                  <label className="form-label">{label} Code</label>
                   <input
                     type="text"
+                    className="form-input"
                     placeholder={activeTab === 'pso' ? 'e.g. PSO1' : 'e.g. PO1'}
                     value={newCode}
                     onChange={(e) => setNewCode(e.target.value)}
                     required
                   />
                 </div>
-                <div className="form-group">
-                  <label>Description</label>
+                <div className="form-group mb-4">
+                  <label className="form-label">Description</label>
                   <textarea
+                    className="form-input"
                     rows="3"
                     placeholder={`Describe what this ${label} measures...`}
                     value={newDescription}
@@ -202,9 +204,9 @@ export default function POBankManager() {
                     required
                   />
                 </div>
-                <div className="modal-actions">
-                  <button type="button" className="btn-secondary" onClick={() => setShowAddModal(false)}>Cancel</button>
-                  <button type="submit" className="btn-primary">Add {label}</button>
+                <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end', marginTop: '1.5rem' }}>
+                  <button type="button" className="btn btn-ghost" onClick={() => setShowAddModal(false)}>Cancel</button>
+                  <button type="submit" className="btn btn-primary">Add {label}</button>
                 </div>
               </form>
             </div>

@@ -6,11 +6,15 @@ const {
   updateFeedbackForm,
   getFeedbackForm,
   getFeedbackFormById,
-  deleteFeedbackForm
+  deleteFeedbackForm,
+  getExpertFormPublic
 } = require("../controllers/feedbackFormController");
 
 const authMiddleware = require("../middleware/authMiddleware");
 const roleMiddleware = require("../middleware/roleMiddleware");
+
+// PUBLIC: Get expert feedback form section (no auth)
+router.get("/expert-form/:eventId", getExpertFormPublic);
 
 // POST /api/feedback-forms — Create a new feedback form
 router.post("/", authMiddleware, roleMiddleware(["organizer", "admin"]), createFeedbackForm);

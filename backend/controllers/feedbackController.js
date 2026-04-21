@@ -53,36 +53,37 @@ exports.submitStudentFeedback = async (req, res) => {
   }
 };
 
-// Submit expert feedback
+// Submit expert feedback (public — no login required, link-based access)
 exports.submitExpertFeedback = async (req, res) => {
   try {
-    const { responses, comments } = req.body;
-    const expert = req.expert; // Set by expertAuthMiddleware
+    const { eventId, expertName, expertEmail, designation, responses, comments } = req.body;
 
-    // Check if already submitted
-    const existing = await ExpertFeedback.findOne({
-      expertAccountId: expert._id,
-      eventId: expert.eventId
-    });
+    if (!eventId) {
+      return res.status(400).json({ message: "Event ID is required" });
+    }
 
-    if (existing) {
-      // Allow editing until report is generated
-      existing.responses = responses;
-      existing.comments = comments || "";
-      await existing.save();
-      return res.json({ message: "Expert feedback updated" });
+    // Verify the feedback form exists and is published
+    const form = await FeedbackForm.findOne({ eventId, status: "published" });
+    if (!form) {
+      return res.status(404).json({ message: "No published feedback form found for this event" });
+    }
+
+    if (!form.expertSection?.enabled || !form.expertSection?.questions?.length) {
+      return res.status(400).json({ message: "Expert feedback is not enabled for this event" });
     }
 
     const feedback = new ExpertFeedback({
-      eventId: expert.eventId,
-      expertAccountId: expert._id,
+      eventId,
+      expertName: expertName || "Anonymous Expert",
+      expertEmail: expertEmail || "",
+      designation: designation || "",
       responses: responses || [],
       comments: comments || ""
     });
 
     await feedback.save();
 
-    res.status(201).json({ message: "Expert feedback submitted successfully" });
+    res.status(201).json({ message: "Expert feedback submitted successfully. Thank you!" });
 
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -105,7 +106,7 @@ exports.getFeedbackAnalytics = async (req, res) => {
     const feedbacks = await StudentFeedback.find({ eventId }).select("-userId -registrationId");
 
     // Get expert feedback
-    const expertFeedbacks = await ExpertFeedback.find({ eventId }).populate("expertAccountId", "expertName designation organization");
+    const expertFeedbacks = await ExpertFeedback.find({ eventId });
 
     // Compute averages per section
     const sectionAverages = {};
