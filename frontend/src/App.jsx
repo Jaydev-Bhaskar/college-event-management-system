@@ -20,6 +20,7 @@ import ExpertDashboard from './pages/ExpertDashboard';
 import ExpertLogin from './pages/ExpertLogin';
 import AdminSetup from './pages/AdminSetup';
 import StudentFeedbackForm from './pages/StudentFeedbackForm';
+import EventReport from './pages/EventReport';
 
 export default function App() {
   return (
@@ -75,6 +76,13 @@ export default function App() {
             <Route path="/organizer/feedback-builder/:eventId" element={
               <ProtectedRoute roles={['organizer', 'admin']}>
                 <FeedbackFormBuilder />
+              </ProtectedRoute>
+            } />
+
+            {/* Event Final Report (Analytics & Image Upload) */}
+            <Route path="/report/:eventId" element={
+              <ProtectedRoute roles={['organizer', 'admin']}>
+                <EventReport />
               </ProtectedRoute>
             } />
 

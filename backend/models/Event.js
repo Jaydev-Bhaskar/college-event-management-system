@@ -66,6 +66,11 @@ const eventSchema = new mongoose.Schema({
     ref: "ExpertAccount"
   }],
 
+  // Images for the final report
+  reportImages: [{
+    type: String
+  }],
+
   // Report metadata
   targetClass: { type: String },
   subjectName: { type: String },

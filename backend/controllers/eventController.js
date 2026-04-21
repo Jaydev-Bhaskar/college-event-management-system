@@ -101,7 +101,7 @@ exports.updateEvent = async (req, res) => {
     const allowedFields = [
       "title", "description", "category", "date", "time", "location",
       "maxParticipants", "posterImage", "status", "targetClass",
-      "subjectName", "sessionCoordinator", "department", "agenda", "objectives"
+      "subjectName", "sessionCoordinator", "department", "agenda", "objectives", "reportImages"
     ];
 
     allowedFields.forEach(field => {
