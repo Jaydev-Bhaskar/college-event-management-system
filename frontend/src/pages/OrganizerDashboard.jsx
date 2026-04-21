@@ -345,6 +345,10 @@ export default function OrganizerDashboard() {
                               onClick={(e) => { e.preventDefault(); navigate(`/organizer/feedback-builder/${evt._id}`); }}>
                               <FileText size={13} style={{ marginRight: 2 }} /> Feedback
                             </a>
+                            <a href="#" style={{ fontSize: '0.8rem', fontWeight: 500, color: 'var(--success)', display: 'flex', alignItems: 'center' }}
+                              onClick={(e) => { e.preventDefault(); navigate(`/report/${evt._id}`); }}>
+                              <BarChart3 size={13} style={{ marginRight: 2 }} /> Report
+                            </a>
                             <a href="#" style={{ fontSize: '0.8rem', fontWeight: 500, color: 'var(--text-primary)', display: 'flex', alignItems: 'center' }}
                               onClick={(e) => { 
                                 e.preventDefault(); 

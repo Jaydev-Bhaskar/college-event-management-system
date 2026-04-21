@@ -366,7 +366,11 @@ export default function AdminDashboard() {
                     </p>
                   </div>
                   <div style={{ padding: '1rem', borderTop: '1px solid var(--border)', background: 'var(--bg-body)' }}>
-                    <button className="btn btn-primary" style={{ width: '100%', fontSize: '0.85rem' }}>
+                    <button 
+                      className="btn btn-primary" 
+                      style={{ width: '100%', fontSize: '0.85rem' }}
+                      onClick={() => navigate(`/report/${evt._id}`)}
+                    >
                       View Full Analysis
                     </button>
                   </div>
