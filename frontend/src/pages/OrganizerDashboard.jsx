@@ -249,14 +249,74 @@ export default function OrganizerDashboard() {
           <div>
             <h1 style={{ fontSize: '1.75rem', fontWeight: 800, marginBottom: '0.2rem' }}>Participants Directory</h1>
             <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
-              View and manage registered students.
+              View and manage registered students for your events.
             </p>
           </div>
-          <div className="glass-card-static empty-state" style={{ padding: '3rem 2rem' }}>
-            <Users size={48} />
-            <h3>Participant Directory</h3>
-            <p>Select an event from the dashboard to view its specific participants.</p>
+          
+          <div className="glass-card-static" style={{ padding: '1.5rem', marginBottom: '1.5rem' }}>
+            <h3 style={{ fontSize: '1rem', fontWeight: 600, marginBottom: '1rem' }}>Select Event</h3>
+            <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+              {myEvents.length === 0 ? (
+                <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>No events active.</span>
+              ) : (
+                myEvents.map(evt => (
+                  <button 
+                    key={evt._id}
+                    className={`btn btn-sm ${selectedEvent?._id === evt._id ? 'btn-primary' : 'btn-outline'}`}
+                    onClick={() => viewParticipants(evt)}
+                  >
+                    {evt.title}
+                  </button>
+                ))
+              )}
+            </div>
           </div>
+
+          {!selectedEvent ? (
+            <div className="glass-card-static empty-state" style={{ padding: '3rem 2rem' }}>
+              <Users size={48} />
+              <h3>Participant Directory</h3>
+              <p>Select an event from the options above to view its specific participants.</p>
+            </div>
+          ) : participantsLoading ? (
+            <div className="glass-card-static" style={{ minHeight: 200, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div className="spinner" />
+            </div>
+          ) : participants.length === 0 ? (
+            <div className="glass-card-static empty-state" style={{ padding: '3rem 2rem' }}>
+              <Users size={48} />
+              <h3>No Participants Yet</h3>
+              <p>No students have registered for {selectedEvent.title} yet.</p>
+            </div>
+          ) : (
+            <div className="glass-card-static" style={{ padding: '1.5rem' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem', borderBottom: '1px solid var(--border)', paddingBottom: '0.75rem' }}>
+                <h3 style={{ fontSize: '1.15rem', fontWeight: 700 }}>{selectedEvent.title} <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem', fontWeight: 500 }}>({participants.length})</span></h3>
+              </div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                {participants.map((p) => (
+                  <div className="participant-row" key={p._id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem', background: 'var(--bg-base)', borderRadius: 'var(--radius-md)' }}>
+                    <div className="participant-info" style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+                      <div className="participant-avatar" style={{ width: 36, height: 36, background: 'var(--primary-light)', color: 'var(--primary)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 600 }}>
+                        {p.userId?.name?.charAt(0).toUpperCase() || '?'}
+                      </div>
+                      <div>
+                        <div style={{ fontWeight: 600, fontSize: '0.95rem' }}>{p.userId?.name || 'Unknown User'}</div>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{p.userId?.email || 'N/A'}</div>
+                      </div>
+                    </div>
+                    {p.attendanceStatus === 'present' ? (
+                      <span className="badge badge-success"><CheckCircle2 size={12} style={{ marginRight: 4 }} /> Present</span>
+                    ) : (
+                      <button className="btn btn-primary btn-sm" style={{ padding: '0.25rem 0.75rem', fontSize: '0.75rem' }} onClick={() => markAttendance(p._id)}>
+                        <QrCode size={12} style={{ marginRight: 4 }} /> Mark Present
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </>
       );
     }
@@ -353,11 +413,12 @@ export default function OrganizerDashboard() {
                     return (
                       <tr key={evt._id}>
                         <td>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}
+                            onClick={() => navigate(`/organizer/event/${evt._id}`)}>
                             <div style={{ width: 28, height: 28, borderRadius: 'var(--radius-sm)', background: 'var(--primary-light)', color: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                               <Calendar size={14} />
                             </div>
-                            <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{evt.title}</span>
+                            <span style={{ fontWeight: 600, color: 'var(--primary)' }}>{evt.title}</span>
                           </div>
                         </td>
                         <td>{formatDate(evt.date)}</td>
@@ -459,7 +520,7 @@ export default function OrganizerDashboard() {
 
       {/* Participants Modal */}
       <Modal
-        isOpen={!!selectedEvent}
+        isOpen={!!selectedEvent && path !== '/organizer/participants'}
         onClose={() => { setSelectedEvent(null); setParticipants([]); }}
         title={`Participants — ${selectedEvent?.title || ''}`}
       >

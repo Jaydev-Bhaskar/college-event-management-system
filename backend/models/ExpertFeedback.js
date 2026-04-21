@@ -8,15 +8,25 @@ const expertFeedbackSchema = new mongoose.Schema({
     required: true
   },
 
-  expertAccountId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "ExpertAccount",
-    required: true
+  expertName: {
+    type: String,
+    default: "Anonymous Expert"
+  },
+
+  expertEmail: {
+    type: String,
+    default: ""
+  },
+
+  designation: {
+    type: String,
+    default: ""
   },
 
   responses: [{
     questionIndex: Number,
-    value: mongoose.Schema.Types.Mixed // Number for ratings, String for text, "NA" for not applicable
+    questionText: String,
+    value: mongoose.Schema.Types.Mixed
   }],
 
   comments: {
@@ -25,8 +35,5 @@ const expertFeedbackSchema = new mongoose.Schema({
   }
 
 }, { timestamps: true });
-
-// One feedback per expert per event
-expertFeedbackSchema.index({ expertAccountId: 1, eventId: 1 }, { unique: true });
 
 module.exports = mongoose.model("ExpertFeedback", expertFeedbackSchema);

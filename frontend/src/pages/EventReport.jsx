@@ -12,17 +12,25 @@ export default function EventReport() {
   const { addToast } = useToast();
 
   const [event, setEvent] = useState(null);
+  const [analytics, setAnalytics] = useState(null);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
 
   useEffect(() => {
-    fetchEvent();
+    fetchData();
   }, [eventId]);
 
-  const fetchEvent = async () => {
+  const fetchData = async () => {
     try {
-      const res = await API.get(`/events/${eventId}`);
-      setEvent(res.data);
+      setLoading(true);
+      const [resEvent, resAnalytics] = await Promise.all([
+        API.get(`/events/${eventId}`),
+        API.get(`/feedback/analytics/${eventId}`).catch(() => ({ data: null }))
+      ]);
+      setEvent(resEvent.data);
+      if (resAnalytics.data) {
+        setAnalytics(resAnalytics.data);
+      }
     } catch (err) {
       addToast('Failed to load event report', 'error');
     } finally {
@@ -79,7 +87,7 @@ export default function EventReport() {
   const isOrganizerOrAdmin = user?.role === 'admin' || user?._id === event.organizerId?._id || user?._id === event.organizerId;
 
   return (
-    <div style={{ maxWidth: 1000, margin: '2rem auto', padding: '0 1rem' }}>
+    <div style={{ maxWidth: 1000, margin: 'calc(var(--navbar-height) + 2rem) auto 2rem', padding: '0 1rem' }}>
       <button className="btn btn-ghost" onClick={() => navigate(-1)} style={{ marginBottom: '1.5rem' }}>
         <ArrowLeft size={16} /> Back to Dashboard
       </button>
@@ -102,11 +110,63 @@ export default function EventReport() {
           </button>
         </div>
 
-        {/* Existing report sections would go here (e.g. charts, analytics, feedback summaries) */}
-        <div style={{ marginBottom: '3rem', padding: '2rem', background: 'var(--bg-body)', borderRadius: 'var(--radius-lg)', textAlign: 'center' }}>
-          <h3 style={{ marginBottom: '1rem' }}>Feedback Analytics Area</h3>
-          <p className="text-secondary" style={{ fontStyle: 'italic' }}>Charts, graphs, and PO/PSO mapping data will render here.</p>
-        </div>
+        {analytics ? (
+          <div style={{ marginBottom: '3rem' }}>
+            <h3 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              📊 Student Feedback Overview
+            </h3>
+            
+            <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(2, 1fr)', marginBottom: '2rem' }}>
+              <div className="stat-card blue">
+                <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Total Responses</span>
+                <div className="stat-value">{analytics.totalResponses}</div>
+              </div>
+              <div className="stat-card amber">
+                <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Overall Satisfaction</span>
+                <div className="stat-value">{analytics.overallAverage} <span style={{ fontSize: '1rem' }}>/ 5</span></div>
+              </div>
+            </div>
+
+            {analytics.expertFeedbacks && analytics.expertFeedbacks.length > 0 && (
+              <div style={{ marginTop: '3rem' }}>
+                <h3 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                  🎓 Expert Feedback & Review
+                </h3>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                  {analytics.expertFeedbacks.map((ef, idx) => (
+                    <div key={ef._id || idx} className="glass-card-static" style={{ padding: '1.5rem', background: 'var(--bg-active)' }}>
+                      <h4 style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--primary)' }}>{ef.expertName || 'Expert Reviewer'}</h4>
+                      <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>{ef.designation || ef.expertEmail || ''}</p>
+                      
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+                        {ef.responses?.map((r, rIdx) => (
+                          <div key={rIdx} style={{ background: 'var(--bg-body)', padding: '0.75rem', borderRadius: 'var(--radius-md)' }}>
+                            <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>
+                              {r.questionText || analytics.formStructure?.expertSection?.questions?.[r.questionIndex]?.text || `Question ${r.questionIndex + 1}`}
+                            </p>
+                            <p style={{ fontWeight: 500 }}>{r.value}</p>
+                          </div>
+                        ))}
+                      </div>
+
+                      {ef.comments && (
+                        <div style={{ borderTop: '1px solid var(--border)', paddingTop: '1rem' }}>
+                          <p style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: '0.25rem' }}>Final Comments / Suggestions:</p>
+                          <p style={{ fontStyle: 'italic' }}>"{ef.comments}"</p>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        ) : (
+          <div style={{ marginBottom: '3rem', padding: '2rem', background: 'var(--bg-body)', borderRadius: 'var(--radius-lg)', textAlign: 'center' }}>
+            <h3 style={{ marginBottom: '1rem' }}>No Feedback Data Available</h3>
+            <p className="text-secondary" style={{ fontStyle: 'italic' }}>Feedback form hasn't been created or no reviews have been submitted yet.</p>
+          </div>
+        )}
 
         {/* Event Photos Section */}
         <div style={{ marginTop: '2rem' }}>

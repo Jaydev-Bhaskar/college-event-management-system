@@ -17,13 +17,29 @@ export default function StudentFeedbackForm() {
   useEffect(() => {
     const fetchForm = async () => {
       try {
-        const [formRes, eventRes] = await Promise.all([
+        const [formRes, eventRes, regsRes] = await Promise.all([
           API.get(`/feedback-forms/event/${eventId}`),
-          API.get(`/events/${eventId}`)
+          API.get(`/events/${eventId}`),
+          API.get('/registrations/my-events')
         ]);
 
         const form = formRes.data;
         const event = eventRes.data;
+        const myRegs = regsRes.data || [];
+
+        // Add admin/organizer bypass so they can preview the form
+        const isRegistered = myRegs.some(reg => reg.event?._id === eventId || reg.event === eventId);
+        
+        // Wait, what if the user is an organizer or admin previewing the form?
+        const currentUserStr = localStorage.getItem('user');
+        const currentUser = currentUserStr ? JSON.parse(currentUserStr) : null;
+        const isPrivileged = currentUser && ['admin', 'organizer'].includes(currentUser.role);
+
+        if (!isRegistered && !isPrivileged) {
+          addToast("You must be registered for this event to submit feedback.", "error");
+          navigate('/events');
+          return;
+        }
 
         if (form.status === 'draft') {
           throw new Error('Form not published');
@@ -41,8 +57,8 @@ export default function StudentFeedbackForm() {
         form.openEndedQuestions?.forEach((q, idx) => initial[q._id || `oeq_${idx}`] = '');
         setAnswers(initial);
       } catch (err) {
-        addToast("Feedback form not found or hasn't been published yet.", "error");
-        navigate('/dashboard/feedback');
+        addToast(err.message === 'Form not published' ? "Form hasn't been published yet." : "Feedback form not found.", "error");
+        navigate('/dashboard');
       } finally {
         setLoading(false);
       }

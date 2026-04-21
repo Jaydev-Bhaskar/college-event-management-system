@@ -16,11 +16,12 @@ import Profile from './pages/Profile';
 import POBankManager from './pages/POBankManager';
 import FeedbackFormBuilder from './pages/FeedbackFormBuilder';
 import SystemSettings from './pages/SystemSettings';
-import ExpertDashboard from './pages/ExpertDashboard';
-import ExpertLogin from './pages/ExpertLogin';
+import ExpertFeedbackForm from './pages/ExpertFeedbackForm';
+import ExpertFormBuilder from './pages/ExpertFormBuilder';
 import AdminSetup from './pages/AdminSetup';
 import StudentFeedbackForm from './pages/StudentFeedbackForm';
 import EventReport from './pages/EventReport';
+import OrganizerEventView from './pages/OrganizerEventView';
 
 export default function App() {
   return (
@@ -39,9 +40,8 @@ export default function App() {
             {/* [DEV ONLY] Admin Setup */}
             <Route path="/setup" element={<AdminSetup />} />
 
-            {/* Expert Dashboard & Login (expert JWT auth, no ProtectedRoute) */}
-            <Route path="/expert/login" element={<ExpertLogin />} />
-            <Route path="/expert/dashboard" element={<ExpertDashboard />} />
+            {/* Public Expert Feedback Form (no login required) */}
+            <Route path="/feedback/expert/:eventId" element={<ExpertFeedbackForm />} />
 
             {/* Student / Teacher Dashboard — all sub-paths render same dashboard */}
             <Route path="/dashboard" element={
@@ -66,6 +66,11 @@ export default function App() {
                 <StudentFeedbackForm />
               </ProtectedRoute>
             } />
+            <Route path="/organizer/event/:eventId" element={
+              <ProtectedRoute roles={['organizer', 'admin']}>
+                <OrganizerEventView />
+              </ProtectedRoute>
+            } />
             <Route path="/organizer/*" element={
               <ProtectedRoute roles={['organizer']}>
                 <OrganizerDashboard />
@@ -76,6 +81,13 @@ export default function App() {
             <Route path="/organizer/feedback-builder/:eventId" element={
               <ProtectedRoute roles={['organizer', 'admin']}>
                 <FeedbackFormBuilder />
+              </ProtectedRoute>
+            } />
+
+            {/* Expert Feedback Form Builder (separate page) */}
+            <Route path="/organizer/expert-form-builder/:eventId" element={
+              <ProtectedRoute roles={['organizer', 'admin']}>
+                <ExpertFormBuilder />
               </ProtectedRoute>
             } />
 

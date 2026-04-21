@@ -238,6 +238,7 @@ export default function FeedbackFormBuilder() {
   const [status, setStatus] = useState('draft');
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [expertSection, setExpertSection] = useState({ enabled: false, questions: [] });
 
   const sidebarLinks = [
     {
@@ -287,6 +288,7 @@ export default function FeedbackFormBuilder() {
           setPoQuestions(formRes.data.poQuestions || []);
           setOpenEndedQuestions(formRes.data.openEndedQuestions || []);
           setStatus(formRes.data.status || 'draft');
+          if (formRes.data.expertSection) setExpertSection(formRes.data.expertSection);
         }
       } catch (err) {
         // No existing form — that's fine
@@ -366,6 +368,11 @@ export default function FeedbackFormBuilder() {
     for (const oq of openEndedQuestions) {
       if (oq.text.trim() === '') return alert('An open-ended question text cannot be empty.');
     }
+    if (expertSection.enabled) {
+      for (const eq of expertSection.questions) {
+        if (eq.text.trim() === '') return alert('An expert question text cannot be empty.');
+      }
+    }
 
     setSaving(true);
     try {
@@ -376,6 +383,7 @@ export default function FeedbackFormBuilder() {
         psoMapping,
         poQuestions,
         openEndedQuestions,
+        expertSection,
         status: publishStatus || status
       };
 
@@ -417,12 +425,12 @@ export default function FeedbackFormBuilder() {
             <h1>Feedback Form Builder</h1>
             <p className="text-secondary">{event?.title}</p>
           </div>
-          <div className="fb-builder-actions">
-            <span className={`fb-status-badge ${status}`}>{status}</span>
-            <button className="btn-secondary" onClick={() => handleSave('draft')} disabled={saving}>
+          <div className="fb-builder-actions" style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+            <span className={`fb-status-badge ${status}`}>{status.toUpperCase()}</span>
+            <button className="btn btn-ghost" onClick={() => handleSave('draft')} disabled={saving}>
               {saving ? 'Saving...' : 'Save Draft'}
             </button>
-            <button className="btn-primary" onClick={() => handleSave('published')} disabled={saving}>
+            <button className="btn btn-primary" onClick={() => handleSave('published')} disabled={saving}>
               Publish Form
             </button>
           </div>
@@ -434,26 +442,51 @@ export default function FeedbackFormBuilder() {
                Share Feedback Links
             </h3>
             <p className="text-secondary" style={{ marginBottom: '1rem', fontSize: '0.9rem' }}>
-              The feedback form is published. Use these links to distribute to participants and experts. Students can also access it on their dashboards.
+              The feedback form is published. Share these links with participants and experts.
             </p>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', background: 'var(--bg-base)', padding: '0.75rem 1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }}>
                 <div style={{ flex: 1 }}>
-                  <strong style={{ display: 'block', fontSize: '0.9rem', marginBottom: '0.25rem' }}>Student Feedback Link</strong>
+                  <strong style={{ display: 'block', fontSize: '0.9rem', marginBottom: '0.25rem' }}>🎓 Student Feedback Link</strong>
                   <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{window.location.origin}/feedback/student/{eventId}</div>
                 </div>
-                <button className="btn-secondary btn-sm" onClick={() => {navigator.clipboard.writeText(`${window.location.origin}/feedback/student/${eventId}`); alert('Copied!');}}>Copy Link</button>
+                <button className="btn btn-outline btn-sm" onClick={() => {navigator.clipboard.writeText(`${window.location.origin}/feedback/student/${eventId}`); alert('Copied!');}}>Copy Link</button>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', background: 'var(--bg-base)', padding: '0.75rem 1rem', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }}>
                 <div style={{ flex: 1 }}>
-                  <strong style={{ display: 'block', fontSize: '0.9rem', marginBottom: '0.25rem' }}>Expert Temporary Login Link</strong>
-                  <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{window.location.origin}/expert/login?eventId={eventId}</div>
+                  <strong style={{ display: 'block', fontSize: '0.9rem', marginBottom: '0.25rem' }}>⭐ Expert Feedback Link</strong>
+                  <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{window.location.origin}/feedback/expert/{eventId}</div>
+                  <div style={{ fontSize: '0.75rem', color: 'var(--primary)', marginTop: '0.25rem' }}>No login required – anyone with this link can submit expert feedback</div>
                 </div>
-                <button className="btn-secondary btn-sm" onClick={() => {navigator.clipboard.writeText(`${window.location.origin}/expert/login?eventId=${eventId}`); alert('Copied!');}}>Copy Link</button>
+                <button className="btn btn-outline btn-sm" onClick={() => {navigator.clipboard.writeText(`${window.location.origin}/feedback/expert/${eventId}`); alert('Copied!');}}>Copy Link</button>
               </div>
             </div>
           </div>
         )}
+
+        {/* Expert Feedback Form — Separate Page */}
+        <div className="fb-section-card" style={{ borderLeft: '4px solid #7c3aed', marginBottom: '1.5rem' }}>
+          <div className="flex-between">
+            <div>
+              <h3 style={{ margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>⭐ Expert Feedback Form</h3>
+              <p className="text-secondary" style={{ fontSize: '0.85rem', marginTop: '0.5rem' }}>
+                Build a separate feedback form for external experts and resource persons.
+              </p>
+            </div>
+            <button
+              className="btn btn-primary btn-sm"
+              onClick={() => navigate(`/organizer/expert-form-builder/${eventId}`)}
+              style={{ whiteSpace: 'nowrap' }}
+            >
+              Open Expert Form Builder →
+            </button>
+          </div>
+          {expertSection.enabled && expertSection.questions.length > 0 && (
+            <div style={{ marginTop: '0.75rem', padding: '0.5rem 0.75rem', background: '#dcfce7', borderRadius: 'var(--radius-sm)', fontSize: '0.8rem', color: '#166534' }}>
+              ✓ Expert form is active with {expertSection.questions.length} question{expertSection.questions.length > 1 ? 's' : ''}
+            </div>
+          )}
+        </div>
 
         {/* PO/PSO Mapping */}
         {(availablePOs.length > 0 || availablePSOs.length > 0) && (
