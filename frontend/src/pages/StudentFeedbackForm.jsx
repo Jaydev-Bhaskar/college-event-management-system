@@ -35,10 +35,10 @@ export default function StudentFeedbackForm() {
         // Initialize default answers
         const initial = {};
         form.sections?.forEach(s => {
-          s.questions?.forEach(q => initial[q._id] = '');
+          s.questions?.forEach(q => initial[q._id || q.text] = '');
         });
-        form.poQuestions?.forEach(q => initial[q._id] = '');
-        form.openEndedQuestions?.forEach(q => initial[q._id] = '');
+        form.poQuestions?.forEach((q, idx) => initial[q._id || `poq_${idx}`] = '');
+        form.openEndedQuestions?.forEach((q, idx) => initial[q._id || `oeq_${idx}`] = '');
         setAnswers(initial);
       } catch (err) {
         addToast("Feedback form not found or hasn't been published yet.", "error");
@@ -58,17 +58,53 @@ export default function StudentFeedbackForm() {
     e.preventDefault();
     setSubmitting(true);
     try {
-      // Very basic submission (assume backend will be implemented)
-      await API.post(`/feedback/submit/${eventId}`, { answers });
+      const responses = [];
+      formConfig.sections?.forEach((s, sIdx) => {
+        s.questions?.forEach((q, qIdx) => {
+          let val = answers[q._id || q.text];
+          if (q.type === 'mcq' && val !== undefined && val !== '') val = q.options[Number(val)];
+          
+          responses.push({
+            sectionId: s.title,
+            questionIndex: qIdx,
+            value: val
+          });
+        });
+      });
+
+      const poResponses = [];
+      formConfig.poQuestions?.forEach((q, qIdx) => {
+        let val = answers[q._id || `poq_${qIdx}`];
+        if (q.type === 'mcq' && val !== undefined && val !== '') val = q.options[Number(val)];
+
+        poResponses.push({
+          poCode: q.poCode || 'General',
+          questionIndex: qIdx,
+          selectedOption: String(val)
+        });
+      });
+
+      const openEndedResponses = [];
+      formConfig.openEndedQuestions?.forEach((q, qIdx) => {
+        openEndedResponses.push({
+          questionIndex: qIdx,
+          answer: answers[q._id || `oeq_${qIdx}`]
+        });
+      });
+
+      const payload = {
+        eventId,
+        responses,
+        poResponses,
+        openEndedResponses,
+        overallRating: 5 // Optional/unused in UI, keeping default
+      };
+
+      await API.post(`/feedback/student`, payload);
       addToast('Feedback submitted successfully! Thank you.', 'success');
       navigate('/dashboard/certificates');
     } catch (err) {
       addToast(err.response?.data?.message || 'Failed to submit feedback.', 'error');
-      // If endpoint doesn't exist yet, spoof success for demonstration
-      if (err.response?.status === 404) {
-        addToast('Feedback submitted locally (backend endpoint pending).', 'success');
-        navigate('/dashboard/certificates');
-      }
     } finally {
       setSubmitting(false);
     }
@@ -88,8 +124,10 @@ export default function StudentFeedbackForm() {
         {formConfig.sections.map((section, sIdx) => (
           <div key={sIdx} className="glass-card" style={{ marginBottom: '1.5rem' }}>
             <h3 style={{ borderBottom: '1px solid var(--border)', paddingBottom: '0.5rem', marginBottom: '1rem' }}>{section.title}</h3>
-            {section.questions.map(q => (
-              <div key={q._id} style={{ marginBottom: '1.5rem' }}>
+            {section.questions.map((q, qIdx) => {
+              const qId = q._id || q.text;
+              return (
+              <div key={qId} style={{ marginBottom: '1.5rem' }}>
                 <p style={{ fontWeight: 500, marginBottom: '0.5rem', display: 'flex', gap: '0.5rem' }}>
                   {q.text} {q.required && <span style={{ color: 'var(--danger)' }}>*</span>}
                 </p>
@@ -98,7 +136,7 @@ export default function StudentFeedbackForm() {
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                     {q.options?.map((opt, i) => (
                       <label key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
-                        <input type="radio" name={q._id} value={opt} checked={answers[q._id] === opt} onChange={(e) => handleUpdate(q._id, e.target.value)} required={q.required} />
+                        <input type="radio" name={qId} value={i} checked={String(answers[qId]) === String(i)} onChange={(e) => handleUpdate(qId, e.target.value)} required={q.required} />
                         {opt}
                       </label>
                     ))}
@@ -108,25 +146,27 @@ export default function StudentFeedbackForm() {
                   <div style={{ display: 'flex', gap: '1rem' }}>
                     {[1,2,3,4,5].map(v => (
                       <label key={v} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'pointer' }}>
-                        <input type="radio" name={q._id} value={v} checked={String(answers[q._id]) === String(v)} onChange={(e) => handleUpdate(q._id, e.target.value)} required={q.required} />
+                        <input type="radio" name={qId} value={v} checked={String(answers[qId]) === String(v)} onChange={(e) => handleUpdate(qId, e.target.value)} required={q.required} />
                         <span>{v}</span>
                       </label>
                     ))}
                   </div>
                 )}
                 {q.type === 'short_text' && (
-                  <input type="text" className="form-control" value={answers[q._id] || ''} onChange={(e) => handleUpdate(q._id, e.target.value)} required={q.required} placeholder="Your answer" />
+                  <input type="text" className="form-control" value={answers[qId] || ''} onChange={(e) => handleUpdate(qId, e.target.value)} required={q.required} placeholder="Your answer" />
                 )}
               </div>
-            ))}
+            )})}
           </div>
         ))}
 
         {formConfig.poQuestions?.length > 0 && (
           <div className="glass-card" style={{ marginBottom: '1.5rem' }}>
             <h3 style={{ borderBottom: '1px solid var(--border)', paddingBottom: '0.5rem', marginBottom: '1rem' }}>Program Outcomes (PO) mapping</h3>
-            {formConfig.poQuestions.map(q => (
-              <div key={q._id} style={{ marginBottom: '1.5rem' }}>
+            {formConfig.poQuestions.map((q, idx) => {
+              const qId = q._id || `poq_${idx}`;
+              return (
+              <div key={qId} style={{ marginBottom: '1.5rem' }}>
                 <p style={{ fontWeight: 500, marginBottom: '0.5rem', display: 'flex', gap: '0.5rem' }}>
                   {q.text} {q.required && <span style={{ color: 'var(--danger)' }}>*</span>}
                 </p>
@@ -134,7 +174,7 @@ export default function StudentFeedbackForm() {
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
                     {q.options?.map((opt, i) => (
                       <label key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer' }}>
-                        <input type="radio" name={q._id} value={opt} checked={answers[q._id] === opt} onChange={(e) => handleUpdate(q._id, e.target.value)} required={q.required} />
+                        <input type="radio" name={qId} value={i} checked={String(answers[qId]) === String(i)} onChange={(e) => handleUpdate(qId, e.target.value)} required={q.required} />
                         {opt}
                       </label>
                     ))}
@@ -144,31 +184,33 @@ export default function StudentFeedbackForm() {
                   <div style={{ display: 'flex', gap: '1rem' }}>
                     {[1,2,3,4,5].map(v => (
                       <label key={v} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', cursor: 'pointer' }}>
-                        <input type="radio" name={q._id} value={v} checked={String(answers[q._id]) === String(v)} onChange={(e) => handleUpdate(q._id, e.target.value)} required={q.required} />
+                        <input type="radio" name={qId} value={v} checked={String(answers[qId]) === String(v)} onChange={(e) => handleUpdate(qId, e.target.value)} required={q.required} />
                         <span>{v}</span>
                       </label>
                     ))}
                   </div>
                 )}
                 {q.type === 'short_text' && (
-                  <input type="text" className="form-control" value={answers[q._id] || ''} onChange={(e) => handleUpdate(q._id, e.target.value)} required={q.required} placeholder="Your answer" />
+                  <input type="text" className="form-control" value={answers[qId] || ''} onChange={(e) => handleUpdate(qId, e.target.value)} required={q.required} placeholder="Your answer" />
                 )}
               </div>
-            ))}
+            )})}
           </div>
         )}
 
         {formConfig.openEndedQuestions?.length > 0 && (
           <div className="glass-card" style={{ marginBottom: '1.5rem' }}>
             <h3 style={{ borderBottom: '1px solid var(--border)', paddingBottom: '0.5rem', marginBottom: '1rem' }}>Additional Feedback</h3>
-            {formConfig.openEndedQuestions.map(q => (
-              <div key={q._id} style={{ marginBottom: '1.5rem' }}>
+            {formConfig.openEndedQuestions.map((q, idx) => {
+              const qId = q._id || `oeq_${idx}`;
+              return (
+              <div key={qId} style={{ marginBottom: '1.5rem' }}>
                 <p style={{ fontWeight: 500, marginBottom: '0.5rem', display: 'flex', gap: '0.5rem' }}>
                   {q.text} {q.required && <span style={{ color: 'var(--danger)' }}>*</span>}
                 </p>
-                <textarea className="form-control" rows="3" value={answers[q._id] || ''} onChange={(e) => handleUpdate(q._id, e.target.value)} required={q.required} placeholder="Your feedback..." style={{ width: '100%', resize: 'vertical' }}></textarea>
+                <textarea className="form-control" rows="3" value={answers[qId] || ''} onChange={(e) => handleUpdate(qId, e.target.value)} required={q.required} placeholder="Your feedback..." style={{ width: '100%', resize: 'vertical' }}></textarea>
               </div>
-            ))}
+            )})}
           </div>
         )}
 

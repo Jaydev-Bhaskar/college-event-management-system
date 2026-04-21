@@ -29,11 +29,11 @@ export default function OrganizerDashboard() {
   const [editingEvent, setEditingEvent] = useState(null);
   const [editLoading, setEditLoading] = useState(false);
   const [editForm, setEditForm] = useState({
-    title: '', description: '', location: '', time: ''
+    title: '', description: '', location: '', category: '', date: '', time: '', endDate: '', endTime: '', maxParticipants: '', posterImage: ''
   });
 
   const [form, setForm] = useState({
-    title: '', description: '', category: '', date: '', time: '', location: '', maxParticipants: ''
+    title: '', description: '', category: '', date: '', time: '', endDate: '', endTime: '', location: '', maxParticipants: '', posterImage: ''
   });
 
   const categories = ['Technical', 'Cultural', 'Sports', 'Workshop', 'Seminar', 'Hackathon'];
@@ -92,6 +92,20 @@ export default function OrganizerDashboard() {
     } finally { setCreateLoading(false); }
   };
 
+  const handleImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (file.size > 10 * 1024 * 1024) {
+       addToast('File too large. Max 10MB', 'error');
+       return;
+    }
+    const reader = new FileReader();
+    reader.onloadend = () => {
+       setForm({ ...form, posterImage: reader.result });
+    };
+    reader.readAsDataURL(file);
+  };
+
   const viewParticipants = async (event) => {
     setSelectedEvent(event);
     setParticipantsLoading(true);
@@ -138,6 +152,71 @@ export default function OrganizerDashboard() {
     return { label: 'Active', color: 'badge-success' };
   };
 
+  const renderFormFields = (formData, setFormData) => (
+    <>
+      <label style={{ display: 'block', border: '2px dashed var(--border)', borderRadius: 'var(--radius-lg)', padding: '1.5rem', textAlign: 'center', marginBottom: '1.25rem', background: 'var(--bg-body)', cursor: 'pointer' }}>
+        <input type="file" accept="image/*" onChange={(e) => {
+          const file = e.target.files[0];
+          if (!file) return;
+          if (file.size > 10 * 1024 * 1024) return addToast('File too large', 'error');
+          const r = new FileReader(); r.onloadend = () => setFormData({...formData, posterImage: r.result}); r.readAsDataURL(file);
+        }} style={{ display: 'none' }} />
+        <Upload size={28} style={{ color: 'var(--primary)', marginBottom: '0.5rem', display: 'inline-block' }} />
+        <p style={{ fontWeight: 500, fontSize: '0.85rem' }}>{formData.posterImage ? 'Poster selected! Click to change' : 'Click to upload Event Poster'}</p>
+        <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Images only (max. 10MB)</p>
+      </label>
+
+      <div className="form-group mb-3">
+        <label className="form-label">Event Title</label>
+        <input className="form-input" placeholder="e.g. Annual Tech Symposium" value={formData.title || ''} onChange={(e) => setFormData({ ...formData, title: e.target.value })} required />
+      </div>
+      <div className="form-group mb-3">
+        <label className="form-label">Description</label>
+        <textarea className="form-input" rows="3" placeholder="Tell everyone what the event is about..." value={formData.description || ''} onChange={(e) => setFormData({ ...formData, description: e.target.value })} required />
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+        <div className="form-group" style={{ marginBottom: 0 }}>
+          <label className="form-label">Category</label>
+          <select className="form-input" value={formData.category || ''} onChange={(e) => setFormData({ ...formData, category: e.target.value })}>
+            <option value="">Select a category</option>
+            {categories.map(c => <option key={c} value={c}>{c}</option>)}
+          </select>
+        </div>
+        <div className="form-group" style={{ marginBottom: 0 }}>
+          <label className="form-label">Max Participants</label>
+          <input type="number" className="form-input" placeholder="50" value={formData.maxParticipants || ''} onChange={(e) => setFormData({ ...formData, maxParticipants: e.target.value })} />
+        </div>
+      </div>
+      <h3 style={{ fontWeight: 700, marginBottom: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.95rem', marginTop: '0.5rem' }}>
+        <MapPin size={16} style={{ color: 'var(--danger)' }} /> Time & Location
+      </h3>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+        <div className="form-group" style={{ marginBottom: 0 }}>
+          <label className="form-label">Start Date</label>
+          <input type="date" className="form-input" value={formData.date ? new Date(formData.date).toISOString().split('T')[0] : ''} onChange={(e) => setFormData({ ...formData, date: e.target.value })} required />
+        </div>
+        <div className="form-group" style={{ marginBottom: 0 }}>
+          <label className="form-label">Start Time</label>
+          <input type="time" className="form-input" value={formData.time || ''} onChange={(e) => setFormData({ ...formData, time: e.target.value })} />
+        </div>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '1rem' }}>
+        <div className="form-group" style={{ marginBottom: 0 }}>
+          <label className="form-label">End Date</label>
+          <input type="date" className="form-input" value={formData.endDate ? new Date(formData.endDate).toISOString().split('T')[0] : ''} onChange={(e) => setFormData({ ...formData, endDate: e.target.value })} />
+        </div>
+        <div className="form-group" style={{ marginBottom: 0 }}>
+          <label className="form-label">End Time</label>
+          <input type="time" className="form-input" value={formData.endTime || ''} onChange={(e) => setFormData({ ...formData, endTime: e.target.value })} />
+        </div>
+      </div>
+      <div className="form-group mb-4" style={{ marginTop: '1rem' }}>
+        <label className="form-label">Location</label>
+        <input className="form-input" placeholder="e.g. Main Auditorium" value={formData.location || ''} onChange={(e) => setFormData({ ...formData, location: e.target.value })} />
+      </div>
+    </>
+  );
+
   const renderContent = () => {
     if (path === '/organizer/create') {
       return (
@@ -149,53 +228,10 @@ export default function OrganizerDashboard() {
             </p>
           </div>
           <div className="glass-card-static" style={{ padding: '2rem' }}>
-            <div style={{ border: '2px dashed var(--border)', borderRadius: 'var(--radius-lg)', padding: '1.5rem', textAlign: 'center', marginBottom: '1.25rem', background: 'var(--bg-body)' }}>
-              <Upload size={28} style={{ color: 'var(--primary)', marginBottom: '0.5rem', display: 'inline-block' }} />
-              <p style={{ fontWeight: 500, fontSize: '0.85rem' }}>Click to upload or drag and drop Event Poster</p>
-              <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>SVG, PNG, JPG or GIF (max. 10MB)</p>
-            </div>
-
             <form onSubmit={handleCreate}>
-              <div className="form-group">
-                <label className="form-label">Event Title</label>
-                <input className="form-input" placeholder="e.g. Annual Tech Symposium 2024" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} required />
-              </div>
-              <div className="form-group">
-                <label className="form-label">Description</label>
-                <textarea className="form-input" rows="4" placeholder="Tell everyone what the event is about..." value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} required />
-              </div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                <div className="form-group">
-                  <label className="form-label">Category</label>
-                  <select className="form-input" value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value })}>
-                    <option value="">Select a category</option>
-                    {categories.map(c => <option key={c} value={c}>{c}</option>)}
-                  </select>
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Max Participants</label>
-                  <input type="number" className="form-input" placeholder="50" value={form.maxParticipants} onChange={(e) => setForm({ ...form, maxParticipants: e.target.value })} />
-                </div>
-              </div>
-              <h3 style={{ fontWeight: 700, marginBottom: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.95rem', marginTop: '0.5rem' }}>
-                <MapPin size={16} style={{ color: 'var(--danger)' }} /> Time & Location
-              </h3>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                <div className="form-group">
-                  <label className="form-label">Date</label>
-                  <input type="date" className="form-input" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} required />
-                </div>
-                <div className="form-group">
-                  <label className="form-label">Time</label>
-                  <input type="time" className="form-input" value={form.time} onChange={(e) => setForm({ ...form, time: e.target.value })} />
-                </div>
-              </div>
-              <div className="form-group mb-4">
-                <label className="form-label">Location</label>
-                <input className="form-input" placeholder="e.g. Main Auditorium, Block C" value={form.location} onChange={(e) => setForm({ ...form, location: e.target.value })} />
-              </div>
+              {renderFormFields(form, setForm)}
               
-              <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end' }}>
+              <div style={{ display: 'flex', gap: '1rem', justifyContent: 'flex-end', marginTop: '1.5rem' }}>
                 <button type="button" className="btn btn-ghost" onClick={() => navigate('/organizer')}>Cancel</button>
                 <button type="submit" className="btn btn-primary" disabled={createLoading}>
                   {createLoading ? 'Publishing...' : <><CalendarPlus size={14} /> Publish Event</>}
@@ -357,7 +393,13 @@ export default function OrganizerDashboard() {
                                   title: evt.title || '',
                                   description: evt.description || '',
                                   location: evt.location || '',
-                                  time: evt.time || ''
+                                  category: evt.category || '',
+                                  date: evt.date || '',
+                                  time: evt.time || '',
+                                  endDate: evt.endDate || '',
+                                  endTime: evt.endTime || '',
+                                  maxParticipants: evt.maxParticipants || '',
+                                  posterImage: evt.posterImage || ''
                                 });
                               }}>
                               <Edit3 size={13} style={{ marginRight: 2 }} /> Edit
@@ -460,22 +502,7 @@ export default function OrganizerDashboard() {
       >
         <div style={{ padding: '0.5rem 0' }}>
           <form onSubmit={handleUpdateEvent}>
-            <div className="form-group mb-3">
-              <label className="form-label">Event Title</label>
-              <input required className="form-input" value={editForm.title} onChange={(e) => setEditForm({...editForm, title: e.target.value})} />
-            </div>
-            <div className="form-group mb-3">
-              <label className="form-label">Description</label>
-              <textarea rows={3} className="form-input" value={editForm.description} onChange={(e) => setEditForm({...editForm, description: e.target.value})} />
-            </div>
-            <div className="form-group mb-3">
-              <label className="form-label">Time</label>
-              <input type="time" className="form-input" value={editForm.time} onChange={(e) => setEditForm({...editForm, time: e.target.value})} />
-            </div>
-            <div className="form-group mb-4">
-              <label className="form-label">Location</label>
-              <input className="form-input" value={editForm.location} onChange={(e) => setEditForm({...editForm, location: e.target.value})} />
-            </div>
+            {renderFormFields(editForm, setEditForm)}
             <div style={{ display: 'flex', gap: '0.75rem', justifyContent: 'flex-end', marginTop: '1.5rem' }}>
               <button type="button" className="btn btn-ghost" onClick={() => setEditingEvent(null)}>Cancel</button>
               <button type="submit" className="btn btn-primary" disabled={editLoading}>

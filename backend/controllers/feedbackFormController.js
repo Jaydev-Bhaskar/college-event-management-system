@@ -31,6 +31,7 @@ exports.createFeedbackForm = async (req, res) => {
       overallQuestion: overallQuestion || undefined,
       openEndedQuestions: openEndedQuestions || [],
       expertSection: expertSection || { enabled: true, questions: [] },
+      status: req.body.status || "draft",
       createdBy: req.user._id
     });
 

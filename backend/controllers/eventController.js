@@ -8,7 +8,7 @@ exports.createEvent = async (req, res) => {
   try {
 
     const {
-      title, description, category, date, time, location,
+      title, description, category, date, time, endDate, endTime, location,
       maxParticipants, posterImage, targetClass, subjectName,
       sessionCoordinator, department, agenda, objectives, status
     } = req.body;
@@ -19,6 +19,8 @@ exports.createEvent = async (req, res) => {
       category,
       date,
       time,
+      endDate,
+      endTime,
       location,
       maxParticipants,
       organizerId: req.user._id,
@@ -99,7 +101,7 @@ exports.updateEvent = async (req, res) => {
     }
 
     const allowedFields = [
-      "title", "description", "category", "date", "time", "location",
+      "title", "description", "category", "date", "time", "endDate", "endTime", "location",
       "maxParticipants", "posterImage", "status", "targetClass",
       "subjectName", "sessionCoordinator", "department", "agenda", "objectives", "reportImages"
     ];

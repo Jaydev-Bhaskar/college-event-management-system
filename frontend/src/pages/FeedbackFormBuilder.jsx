@@ -353,6 +353,20 @@ export default function FeedbackFormBuilder() {
   };
 
   const handleSave = async (publishStatus) => {
+    // Client-side validation to ensure no empty questions are saved
+    for (const section of sections) {
+      if (section.title.trim() === '') return alert('A section title cannot be empty.');
+      for (const q of section.questions) {
+        if (q.text.trim() === '') return alert('A question text cannot be empty.');
+      }
+    }
+    for (const pq of poQuestions) {
+      if (pq.text.trim() === '') return alert('A PO/PSO question text cannot be empty.');
+    }
+    for (const oq of openEndedQuestions) {
+      if (oq.text.trim() === '') return alert('An open-ended question text cannot be empty.');
+    }
+
     setSaving(true);
     try {
       const formData = {
