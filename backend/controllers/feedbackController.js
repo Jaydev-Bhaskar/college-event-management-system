@@ -49,7 +49,7 @@ exports.submitStudentFeedback = async (req, res) => {
     if (error.code === 11000) {
       return res.status(400).json({ message: "You have already submitted feedback for this event" });
     }
-    res.status(500).json({ error: error.message });
+    res.status(500).json({ message: error.message, error: error.message });
   }
 };
 

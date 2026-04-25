@@ -40,7 +40,9 @@ export default function StudentDashboard() {
     },
     {
       title: 'ORGANIZER',
-      items: [
+      items: user?.role === 'organizer' ? [
+        { path: '/organizer', label: 'Back to Portal', icon: <LayoutDashboard size={18} /> },
+      ] : [
         { path: '/dashboard/host', label: 'Host an Event', icon: <PlusCircle size={18} /> },
       ]
     }

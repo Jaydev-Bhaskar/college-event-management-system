@@ -6,8 +6,19 @@ import { getFeedbackFormByEvent, updateFeedbackForm, createFeedbackForm } from '
 import Sidebar from '../components/Sidebar';
 import {
   LayoutDashboard, Calendar, PlusCircle, Users, BarChart3,
-  UserCircle, Star, ArrowLeft, Save, Send, Eye, Copy
+  UserCircle, Star, ArrowLeft, Save, Send, Eye, Copy, FileStack
 } from 'lucide-react';
+
+const COLLEGE_EXPERT_TEMPLATE = [
+  { text: 'Audio Visual facility provided was appropriate', type: 'rating_1_5', required: true },
+  { text: 'Cooperation from department/institute was excellent', type: 'rating_1_5', required: true },
+  { text: 'Understanding level of the students was good', type: 'rating_1_5', required: true },
+  { text: 'Interaction of students with the expert was proactive', type: 'rating_1_5', required: true },
+  { text: 'Question level of the students was intellectual', type: 'rating_1_5', required: true },
+  { text: 'Quality of food provided was good', type: 'rating_1_5', required: true },
+  { text: 'Accommodation facility provided was satisfactory', type: 'rating_1_5', required: true },
+  { text: 'Overall rating for the conduction of the session', type: 'rating_1_5', required: true },
+];
 
 export default function ExpertFormBuilder() {
   const { eventId } = useParams();
@@ -35,7 +46,7 @@ export default function ExpertFormBuilder() {
     {
       title: 'TOOLS',
       items: [
-        { path: '/dashboard', label: 'My Registrations', icon: <UserCircle size={18} /> },
+        { path: '/organizer/registrations', label: 'My Registrations', icon: <UserCircle size={18} /> },
       ]
     }
   ];
@@ -179,6 +190,17 @@ export default function ExpertFormBuilder() {
           <div className="fb-builder-actions" style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
             <button
               className="btn btn-outline"
+              onClick={() => {
+                if (window.confirm('This will replace current expert questions with the standard college template. Continue?')) {
+                  setExpertSection({ enabled: true, questions: [...COLLEGE_EXPERT_TEMPLATE] });
+                }
+              }}
+              title="Load standard 8 questions from college template"
+            >
+              <FileStack size={16} /> Load College Template
+            </button>
+            <button
+              className="btn btn-primary"
               onClick={handleSave}
               disabled={saving}
             >

@@ -8,7 +8,8 @@ import Modal from '../components/Modal';
 import {
   LayoutDashboard, CalendarPlus, Users, BarChart3,
   Calendar, Eye, CheckCircle2, QrCode, Search,
-  Upload, MapPin, Clock, PlusCircle, UserCircle, FileText, UserCheck, Edit3
+  Upload, MapPin, Clock, PlusCircle, UserCircle, FileText, UserCheck, Edit3,
+  CalendarDays, QrCode as QrIcon, Download, MessageSquare
 } from 'lucide-react';
 
 export default function OrganizerDashboard() {
@@ -36,6 +37,9 @@ export default function OrganizerDashboard() {
     title: '', description: '', category: '', date: '', time: '', endDate: '', endTime: '', location: '', maxParticipants: '', posterImage: ''
   });
 
+  const [registrations, setRegistrations] = useState([]);
+  const [regsLoading, setRegsLoading] = useState(false);
+
   const categories = ['Technical', 'Cultural', 'Sports', 'Workshop', 'Seminar', 'Hackathon'];
 
   const sidebarLinks = [
@@ -52,12 +56,27 @@ export default function OrganizerDashboard() {
     {
       title: 'TOOLS',
       items: [
-        { path: '/dashboard', label: 'My Registrations', icon: <UserCircle size={18} /> },
+        { path: '/organizer/registrations', label: 'My Registrations', icon: <UserCircle size={18} /> },
       ]
     }
   ];
 
-  useEffect(() => { fetchEvents(); }, []);
+  useEffect(() => { 
+    fetchEvents(); 
+    fetchRegistrations();
+  }, []);
+
+  const fetchRegistrations = async () => {
+    setRegsLoading(true);
+    try {
+      const res = await API.get('/registrations/my-events');
+      setRegistrations(res.data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setRegsLoading(false);
+    }
+  };
 
   const fetchEvents = async () => {
     try {
@@ -335,6 +354,89 @@ export default function OrganizerDashboard() {
             <h3>Analytics Dashboard</h3>
             <p>Comprehensive analytics reporting is coming soon.</p>
           </div>
+        </>
+      );
+    }
+
+    if (path === '/organizer/registrations') {
+      const upcomingRegs = registrations.filter((r) => {
+        if (!r.eventId || !r.eventId.date) return false;
+        const eventDate = new Date(r.eventId.date);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        return eventDate >= today;
+      });
+
+      const getDaysUntil = (d) => {
+        if (!d) return '';
+        const eventD = new Date(d);
+        const todayD = new Date();
+        eventD.setHours(0, 0, 0, 0);
+        todayD.setHours(0, 0, 0, 0);
+        const diff = Math.round((eventD - todayD) / (1000 * 60 * 60 * 24));
+        if (diff === 0) return 'TODAY';
+        if (diff === 1) return 'TOMORROW';
+        if (diff < 0) return 'COMPLETED';
+        return `IN ${diff} DAYS`;
+      };
+
+      return (
+        <>
+          <div>
+            <h1 style={{ fontSize: '1.75rem', fontWeight: 800, marginBottom: '0.2rem' }}>My Registrations</h1>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
+              Events you are participating in as a student/faculty.
+            </p>
+          </div>
+
+          {regsLoading ? (
+            <div className="glass-card-static" style={{ minHeight: 200, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div className="spinner" />
+            </div>
+          ) : upcomingRegs.length === 0 ? (
+            <div className="glass-card-static empty-state" style={{ padding: '3rem 2rem' }}>
+              <CalendarDays size={48} />
+              <h3>No Registrations</h3>
+              <p>You haven't registered for any upcoming events yet.</p>
+              <button className="btn btn-primary" onClick={() => navigate('/events')}>Browse Events</button>
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1.5rem' }}>
+              {upcomingRegs.map((r) => {
+                const evt = r.eventId;
+                if (!evt) return null;
+                return (
+                  <div key={r._id} className="glass-card-static" style={{ padding: '0', overflow: 'hidden' }}>
+                    <div style={{
+                      height: 120,
+                      background: evt.posterImage ? `url(${evt.posterImage}) center/cover` : 'linear-gradient(135deg, #0F766E, #1E293B)',
+                      position: 'relative'
+                    }}>
+                      <span className="badge badge-info" style={{ position: 'absolute', top: 12, left: 12 }}>
+                        {getDaysUntil(evt.date)}
+                      </span>
+                    </div>
+                    <div style={{ padding: '1.25rem' }}>
+                      <h3 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '0.5rem' }}>{evt.title}</h3>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem', fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1.25rem' }}>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}><MapPin size={14} /> {evt.location || 'TBD'}</span>
+                        <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}><Clock size={14} /> {evt.time || 'TBD'}</span>
+                      </div>
+                      
+                      <div style={{ display: 'flex', gap: '0.75rem' }}>
+                        <button className="btn btn-outline btn-sm" style={{ flex: 1 }} onClick={() => navigate(`/events/${evt._id}`)}>Details</button>
+                        {r.qrCode && (
+                           <button className="btn btn-primary btn-sm" style={{ flex: 1 }} onClick={() => window.open(r.qrCode, '_blank')}>
+                             <QrIcon size={14} /> Ticket
+                           </button>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
         </>
       );
     }

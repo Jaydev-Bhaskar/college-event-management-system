@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import API from '../api/axios';
+import jsQR from 'jsqr';
 import Sidebar from '../components/Sidebar';
 import {
   LayoutDashboard, Calendar, Users, BarChart3, PlusCircle, UserCircle,
@@ -127,6 +128,40 @@ export default function OrganizerEventView() {
     }
   };
 
+  const handleImageUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const img = new Image();
+      img.onload = async () => {
+        const canvas = document.createElement('canvas');
+        const context = canvas.getContext('2d');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        context.drawImage(img, 0, 0, img.width, img.height);
+        const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+        const code = jsQR(imageData.data, imageData.width, imageData.height);
+
+        if (code) {
+          try {
+            await API.post('/registrations/attendance/qr', { qrData: code.data });
+            addToast('Attendance marked via uploaded QR!', 'success');
+            fetchParticipants();
+          } catch (err) {
+            addToast(err.response?.data?.message || 'Invalid QR code', 'error');
+          }
+        } else {
+          addToast('No QR code found in the image', 'error');
+        }
+      };
+      img.src = event.target.result;
+    };
+    reader.readAsDataURL(file);
+    e.target.value = null;
+  };
+
   const formatDate = (d) => d ? new Date(d).toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' }) : 'TBD';
   const presentCount = participants.filter(p => p.attendanceStatus === 'present').length;
   const filteredParticipants = participants.filter(p =>
@@ -231,7 +266,21 @@ export default function OrganizerEventView() {
               onKeyDown={(e) => e.key === 'Enter' && handleQrScan()}
             />
           </div>
-          <button className="btn btn-primary" onClick={handleQrScan} style={{ whiteSpace: 'nowrap' }}>
+          <div className="form-group" style={{ marginBottom: 0 }}>
+            <label className="form-label">Upload QR Image</label>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleImageUpload}
+              className="form-input"
+              style={{ display: 'none' }}
+              id="qr-upload"
+            />
+            <label htmlFor="qr-upload" className="btn btn-outline" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', height: '42px' }}>
+              <ImageIcon size={16} /> Upload Image
+            </label>
+          </div>
+          <button className="btn btn-primary" onClick={handleQrScan} style={{ whiteSpace: 'nowrap', height: '42px' }}>
             <CheckCircle2 size={16} /> Mark Present
           </button>
         </div>

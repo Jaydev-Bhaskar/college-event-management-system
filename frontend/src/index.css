@@ -1826,3 +1826,129 @@ textarea.form-input { resize: vertical; min-height: 100px; }
   color: var(--text-secondary);
   font-size: 0.95rem;
 }
+/* ========================================
+   FORMAL REPORT & PRINT STYLES
+   ======================================== */
+.formal-report {
+  background: white;
+  color: black;
+  padding: 0;
+  margin: 0;
+  font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.report-header {
+  border-bottom: 2px solid black;
+  padding-bottom: 1rem;
+  margin-bottom: 2rem;
+}
+
+.report-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 1.5rem;
+}
+
+.report-table th, .report-table td {
+  border: 1px solid #000;
+  padding: 0.5rem 0.75rem;
+  text-align: left;
+  font-size: 0.9rem;
+}
+
+.report-table th {
+  background-color: #f3f4f6;
+  font-weight: 700;
+}
+
+.report-title {
+  text-align: center;
+  font-size: 1.5rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  margin-bottom: 1.5rem;
+  text-decoration: underline;
+}
+
+.report-section-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  margin: 1.5rem 0 0.75rem;
+  border-bottom: 1px solid #ddd;
+  padding-bottom: 0.25rem;
+}
+
+.report-footer-sigs {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2rem;
+  margin-top: 4rem;
+  text-align: center;
+}
+
+.sig-box {
+  border-top: 1px solid black;
+  padding-top: 0.5rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+@media print {
+  body {
+    background: white !important;
+    padding: 0 !important;
+  }
+  
+  .no-print, 
+  .navbar, 
+  .sidebar, 
+  .btn, 
+  button, 
+  .toast-container,
+  footer {
+    display: none !important;
+  }
+
+  .dashboard-layout {
+    display: block !important;
+  }
+
+  .dashboard-content {
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+  }
+
+  .glass-card, .glass-card-static {
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    background: transparent !important;
+  }
+
+  .formal-report {
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .page-break {
+    page-break-before: always !important;
+  }
+
+  .report-images-grid {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 1rem !important;
+  }
+
+  .report-image-item {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  @page {
+    size: A4;
+    margin: 1.5cm;
+  }
+}

@@ -28,7 +28,7 @@ export default function StudentFeedbackForm() {
         const myRegs = regsRes.data || [];
 
         // Add admin/organizer bypass so they can preview the form
-        const isRegistered = myRegs.some(reg => reg.event?._id === eventId || reg.event === eventId);
+        const isRegistered = myRegs.some(reg => reg.eventId?._id === eventId || reg.eventId === eventId);
         
         // Wait, what if the user is an organizer or admin previewing the form?
         const currentUserStr = localStorage.getItem('user');
