@@ -37,7 +37,7 @@ const studentFeedbackSchema = new mongoose.Schema({
   overallRating: {
     type: Number,
     min: 1,
-    max: 3
+    max: 5
   },
 
   openEndedResponses: [{

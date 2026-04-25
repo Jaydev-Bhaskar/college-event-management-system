@@ -1,0 +1,93 @@
+DepartmentofComputerEngineering
+EXPERTFEEDBACKANALYSIS
+Title:-ExpertTalkonCyberSecurity
+Date:-Monday09/3/2026 Class:-SecondYearB.
+Tech
+ResourcePerson:-Mr.VikasNaik,Director,CIOUprisesolLLP,Mumbai.
+SubjectName:-IntroductiontoCyberSecurity
+Sessioncoordinator:-Ms.R.S.More
+Objective
+- Tocreateawarenessaboutcyberthreat,crimesand safeonlinepractices 
+Tomotivatestudentstofollowethicaldigitalpracticesandexplorecareersincybersecurity 
+Missiontags:
+M2-ToimpartprofessionalskillsinundergraduatestudentsinComputerEngineering
+POscovered::PO1,PO2,PO5,PO7 PSOscovered:PSO3
+Expert’sFeedbackAnalysis:
+1. Audiovisualsystemarrangement
+2. CooperationfromFaculty/Dept./Institute
+3. Understandinglevelofstudents/Audience
+4. InteractionwithStudent
+5. LevelofquestionsaskedbytheStudent
+6. Qualityoffood.
+7. Accommodationfacility
+8. OverallRating:-Excellent(5),VeryGood(4),Good(3),Average(2),Poor(1)
+Particular 1 2 3 4 5 6 7 8
+Response 5 5 4 3 3 NA NA 5
+Comment/Suggestions:--
+StudentsFeedbackAnalysis:
+Questions:
+A.Content
+
+---PAGE---
+
+1. Thecoursemetitsstatedaimsandobjectives.
+2. WellOrganized.
+3. Theprogramwaswellpacedwithintheallottedtime.
+4. Effectiveactivities.
+5. Usefulvisualaidsandhands-outs.
+B.Presentation
+1. Instructor'sKnowledge.
+2. Instructor'spresentationStyle.
+3. Instructorcoveredmaterialclearly.
+4. Instructorrespondedwelltoquestions
+5. Instructorinteractionsamongparticipants.
+E.Overall,howwouldyouratethisSeminar/ExpertTalk?
+Response:
+ForSectionA,B&PO/PSO:-Excellent(5),VeryGood(4),Good(3),Average(2),Poor(1)
+ForSectionE:-Excellent(3),Good(2),Poor(1)
+Question
+sNo.A B
+E
+1 2 3 4 5 1 2 3 4 5
+Respons
+e(Avg.)4.654.564.374.474.504.654.634.584.624.602.89
+QuestionspeciﬁctoPOs&PSOs:
+Q1.Acompanysemployeesreceiveemailsaskingthemtoclickalinkandentertheirlogin
+credentialsonafakewebsite.Thistypeofcyber-attackisknownas:
+Ans:Phishingattack
+Q2.AuserconnectstoafreepublicWi-Finetworkandenterslogindetailsonawebsite.
+Later,theaccountgetshacked.Whichpossiblesecurityriskshouldbe.
+Ans:Man-in-the-Middleattack
+Q3.Asecurityanalystusesavulnerabilityscanningtooltodetectweaknessesina
+computernetworkbeforeattackersexploitthem.Themainpurposeofusingsuch
+Ans:Identifyandanalyzesystemvulnerabilities
+Q4.Acybersecurityprofessionaldiscoversavulnerabilityinacompany’swebsite.Instead
+ofexploitingit,theyreporttheissueresponsiblytotheorganizationsoitcanbeﬁxed.This
+behaviorrepresents:
+
+---PAGE---
+
+Ans:EthicalHacking
+Q5.Areyouabletoadaptmoderncomputertoolsandtechnologiesincybersecurityforcareer
+enrichment?
+Ans:Yes
+PO/PSO PO1 PO2 PO5 PO7 PSO3
+Response
+(Avg.) 4.03 4.57 4.53 4.62 4.45
+Whichsession/elementsoftheeventdidyouﬁndmostuseful?Why?
+1.Themostusefulpartoftheeventwastheinteractivesessionandcasestudiesshared
+bythespeaker.
+2.Theirwayofpresentingthesessionwasmostusefulastheyprovidedtheirknowledge
+inaveryhumorous,interactivewaysothateveryonegetstheimportanceofthetopic
+Comments:
+1.Lookingforwardandpleasedformoresuchinsightfulsessionsonemergingtrendsin
+technology.
+2.Wewantmoresessionslikethis
+3.Theexpertsessionwasveryinformativeandhelpedimprovemyunderstandingof
+cybersecuritythreats,tools,andethicalpractices.
+Whatisyourtakeawayfromthissession?
+Observation:Studentsappreciatedtheinteractivesession,casestudies,andengagingteaching
+style,whichimprovedtheirunderstanding.
+ActionTaken:-Planmoreinteractiveexpertsessionswithreal-lifecasestudiesinfuture.
+Ms.R.S.More Dr.B.S.Tarle
+SessionCoordinator ProgrammeCoordinator HOD
