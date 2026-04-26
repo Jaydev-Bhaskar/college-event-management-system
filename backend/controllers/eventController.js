@@ -1,4 +1,5 @@
 const Event = require("../models/Event");
+const Registration = require("../models/Registration");
 const SystemSettings = require("../models/SystemSettings");
 const User = require("../models/User");
 
@@ -57,9 +58,32 @@ exports.getEvents = async (req, res) => {
       filter.status = "published";
     }
 
-    const events = await Event.find(filter).populate("organizerId", "name email department");
+    const events = await Event.aggregate([
+      { $match: filter },
+      {
+        $lookup: {
+          from: "registrations",
+          localField: "_id",
+          foreignField: "eventId",
+          as: "eventRegistrations"
+        }
+      },
+      {
+        $addFields: {
+          registrationCount: { $size: "$eventRegistrations" }
+        }
+      },
+      { $project: { eventRegistrations: 0 } },
+      { $sort: { date: -1 } }
+    ]);
 
-    res.json(events);
+    // Populate organizerId after aggregation
+    const populatedEvents = await Event.populate(events, { 
+      path: "organizerId", 
+      select: "name email department" 
+    });
+
+    res.json(populatedEvents);
 
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -103,7 +127,10 @@ exports.updateEvent = async (req, res) => {
     const allowedFields = [
       "title", "description", "category", "date", "time", "endDate", "endTime", "location",
       "maxParticipants", "posterImage", "status", "targetClass",
-      "subjectName", "sessionCoordinator", "department", "agenda", "objectives", "reportImages"
+      "subjectName", "sessionCoordinator", "department", "agenda", "objectives", "reportImages",
+      "activitySummary", "outcomes", "studentParticipationCount", "keyHighlights",
+      "challenges", "conclusion", "futureScope", "selectedCOs", "selectedPOs", "selectedPSOs", 
+      "hodName", "actionTaken", "programmeCoordinator"
     ];
 
     allowedFields.forEach(field => {

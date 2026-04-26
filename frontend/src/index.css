@@ -1837,6 +1837,23 @@ textarea.form-input { resize: vertical; min-height: 100px; }
   font-family: 'Inter', 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
 
+.print-only {
+  display: none;
+}
+
+.no-screen {
+  display: none;
+}
+
+@media print {
+  .print-only {
+    display: block !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+}
+
 .report-header {
   border-bottom: 2px solid black;
   padding-bottom: 1rem;

@@ -9,6 +9,7 @@ const departments = [
   'Mechanical Engineering',
   'Electronics and Telecommunication Engineering',
   'Information Technology',
+  'Instrumentation and Control Engineering',
   'Artificial Intelligence and Data Science',
   'Electrical Engineering',
   'MBA',
