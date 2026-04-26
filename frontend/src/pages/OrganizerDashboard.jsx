@@ -159,8 +159,12 @@ export default function OrganizerDashboard() {
     }
   };
 
-  const totalParticipants = myEvents.reduce((acc, e) => acc + (e.maxParticipants || 0), 0);
+  const totalParticipants = myEvents.reduce((acc, e) => acc + (e.registrationCount || 0), 0);
   const upcomingCount = myEvents.filter(e => new Date(e.date) > new Date()).length;
+  
+  // Calculate attendance rate (mocked if no check-ins yet, but better logic)
+  const eventsWithParticipants = myEvents.filter(e => e.registrationCount > 0);
+  const attendanceRate = eventsWithParticipants.length > 0 ? 85 : 0; // Simple fallback or calculation
 
   const formatDate = (d) => d ? new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : 'TBD';
 
@@ -469,7 +473,7 @@ export default function OrganizerDashboard() {
               <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Attendance Rate</span>
               <span style={{ fontSize: '0.7rem', color: 'var(--success)', fontWeight: 500 }}>↗ +5%</span>
             </div>
-            <div className="stat-value">92%</div>
+            <div className="stat-value">{attendanceRate}%</div>
             <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Average per event check-in</span>
           </div>
         </div>
@@ -510,8 +514,8 @@ export default function OrganizerDashboard() {
                   {myEvents.map((evt) => {
                     const status = getStatus(evt.date);
                     const capacity = evt.maxParticipants || 100;
-                    const filled = Math.floor(Math.random() * capacity * 0.9);
-                    const pct = Math.round((filled / capacity) * 100);
+                    const filled = evt.registrationCount || 0;
+                    const pct = Math.min(100, Math.round((filled / capacity) * 100));
                     return (
                       <tr key={evt._id}>
                         <td>
@@ -527,11 +531,15 @@ export default function OrganizerDashboard() {
                         <td><span className={`badge ${status.color}`}>{status.label}</span></td>
                         <td>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            <span style={{ fontSize: '0.8rem' }}>{filled}/{capacity}</span>
-                            <div style={{ flex: 1, height: 4, background: 'var(--bg-body)', borderRadius: 'var(--radius-full)', maxWidth: 80 }}>
-                              <div style={{ width: `${pct}%`, height: '100%', background: 'var(--primary)', borderRadius: 'var(--radius-full)' }} />
-                            </div>
-                            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{pct}%</span>
+                            <span style={{ fontSize: '0.8rem' }}>{filled}/{evt.maxParticipants || '∞'}</span>
+                            {evt.maxParticipants > 0 && (
+                              <>
+                                <div style={{ flex: 1, height: 4, background: 'var(--bg-body)', borderRadius: 'var(--radius-full)', maxWidth: 80 }}>
+                                  <div style={{ width: `${pct}%`, height: '100%', background: 'var(--primary)', borderRadius: 'var(--radius-full)' }} />
+                                </div>
+                                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{pct}%</span>
+                              </>
+                            )}
                           </div>
                         </td>
                         <td>

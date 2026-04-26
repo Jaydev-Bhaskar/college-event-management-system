@@ -138,8 +138,14 @@ exports.getFeedbackAnalytics = async (req, res) => {
         if (!poAverages[pr.poCode]) {
           poAverages[pr.poCode] = { sum: 0, count: 0 };
         }
-        // For MCQ, we'd need to check correctness — simplified here
-        poAverages[pr.poCode].count += 1;
+        
+        // Convert value to number if possible (for ratings)
+        // If it's an MCQ, we assume the frontend sends a numeric value or 1 for correct
+        const val = Number(pr.value);
+        if (!isNaN(val)) {
+          poAverages[pr.poCode].sum += val;
+          poAverages[pr.poCode].count += 1;
+        }
       });
 
       // Overall
@@ -179,12 +185,19 @@ exports.getFeedbackAnalytics = async (req, res) => {
         }
       });
     });
+    
+    // Flatten PO averages
+    const flattenedPOs = {};
+    Object.keys(poAverages).forEach(code => {
+      const p = poAverages[code];
+      flattenedPOs[code] = p.count > 0 ? (p.sum / p.count).toFixed(2) : 0;
+    });
 
     res.json({
       eventId,
       totalResponses: feedbacks.length,
       sectionAverages: computedSections,
-      poAverages,
+      poAverages: flattenedPOs,
       overallAverage: overallCount > 0 ? (overallSum / overallCount).toFixed(2) : 0,
       openEndedResponses: openEndedCollected,
       expertFeedbacks,

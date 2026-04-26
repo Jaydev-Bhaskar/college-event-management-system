@@ -9,14 +9,26 @@ exports.getPOBank = async (req, res) => {
       return res.status(400).json({ message: "Department is required" });
     }
 
-    let poBank = await POBank.findOne({ department });
+    // Fetch both global and department specific banks
+    const [globalBank, deptBank] = await Promise.all([
+      POBank.findOne({ department: "Global" }),
+      POBank.findOne({ department })
+    ]);
 
-    if (!poBank) {
-      // Return empty bank structure
-      return res.json({ department, pos: [], psos: [] });
-    }
+    // Merge them
+    const mergedPOs = [
+      ...(globalBank?.pos || []),
+      ...(deptBank?.pos || [])
+    ];
 
-    res.json(poBank);
+    // Remove duplicates by code (prefer dept specific if same code exists, though usually PO1-PO11 are fixed)
+    const uniquePOs = Array.from(new Map(mergedPOs.map(item => [item.code, item])).values());
+
+    res.json({
+      department,
+      pos: uniquePOs,
+      psos: deptBank?.psos || []
+    });
 
   } catch (error) {
     res.status(500).json({ error: error.message });

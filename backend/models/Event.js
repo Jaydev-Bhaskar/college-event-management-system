@@ -85,7 +85,20 @@ const eventSchema = new mongoose.Schema({
   sessionCoordinator: { type: String },
   department: { type: String },
   agenda: { type: String },
-  objectives: { type: String }
+  objectives: { type: String },
+  activitySummary: { type: String },
+  outcomes: { type: String },
+  studentParticipationCount: { type: String },
+  keyHighlights: { type: String },
+  challenges: { type: String },
+  conclusion: { type: String },
+  futureScope: { type: String },
+  selectedCOs: [{ type: String }],
+  selectedPOs: [{ type: String }],
+  selectedPSOs: [{ type: String }],
+  hodName: { type: String },
+  actionTaken: { type: String },
+  programmeCoordinator: { type: String }
 
 }, { timestamps: true });
 
