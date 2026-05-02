@@ -24,7 +24,7 @@ exports.registerUser = async (req, res) => {
       password: hashedPassword,
       department,
       baseRole,
-      role: baseRole, // Effective role starts as base role
+      role: baseRole === "teacher" ? "organizer" : baseRole, // Teachers are organizers by default
       studentId: studentId || ""
     });
 
@@ -108,9 +108,9 @@ exports.setupAccount = async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // For admin: set both role and baseRole
-    const actualRole = role === 'admin' ? 'admin' : 'teacher';
-    const baseRole = role === 'admin' ? 'teacher' : 'teacher'; // baseRole is always teacher for faculty
+    // For faculty/staff: set baseRole to teacher and role to organizer
+    const actualRole = role === 'admin' ? 'admin' : 'organizer';
+    const baseRole = 'teacher';
 
     const user = new User({
       name,

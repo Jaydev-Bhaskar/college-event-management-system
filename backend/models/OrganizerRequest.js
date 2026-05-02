@@ -28,12 +28,55 @@ const organizerRequestSchema = new mongoose.Schema({
     type: String
   },
 
+  endDate: {
+    type: Date
+  },
+
+  endTime: {
+    type: String
+  },
+
   location: {
     type: String
   },
 
   maxParticipants: {
     type: Number
+  },
+
+  posterImage: {
+    type: String
+  },
+
+  registrationType: {
+    type: String,
+    enum: ["individual", "team"],
+    default: "individual"
+  },
+
+  minTeamSize: {
+    type: Number,
+    default: 1
+  },
+
+  maxTeamSize: {
+    type: Number,
+    default: 1
+  },
+
+  requiresApproval: {
+    type: Boolean,
+    default: false
+  },
+
+  isPaid: {
+    type: Boolean,
+    default: false
+  },
+
+  registrationFee: {
+    type: Number,
+    default: 0
   },
 
   status: {

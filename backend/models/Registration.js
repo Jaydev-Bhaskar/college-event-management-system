@@ -20,6 +20,41 @@ const registrationSchema = new mongoose.Schema({
     default: "pending"
   },
 
+  registrationStatus: {
+    type: String,
+    enum: ["pending", "confirmed", "waitlisted", "rejected"],
+    default: "confirmed"
+  },
+
+  teamName: {
+    type: String,
+    default: ""
+  },
+
+  isTeamLeader: {
+    type: Boolean,
+    default: false
+  },
+
+  teamMembers: [{
+    name: { type: String },
+    studentId: { type: String },
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+    status: { 
+      type: String, 
+      enum: ["pending", "accepted", "declined"],
+      default: "accepted" 
+    }
+  }],
+
+  paymentScreenshot: {
+    type: String
+  },
+
+  transactionId: {
+    type: String
+  },
+
   attendanceMarkedBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "User"

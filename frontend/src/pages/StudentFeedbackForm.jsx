@@ -74,12 +74,20 @@ export default function StudentFeedbackForm() {
     e.preventDefault();
     setSubmitting(true);
     try {
+      let totalRating = 0;
+      let ratingCount = 0;
       const responses = [];
+      
       formConfig.sections?.forEach((s, sIdx) => {
         s.questions?.forEach((q, qIdx) => {
           let val = answers[q._id || q.text];
           if (q.type === 'mcq' && val !== undefined && val !== '') val = q.options[Number(val)];
           
+          if (q.type === 'rating_1_5' && val) {
+            totalRating += Number(val);
+            ratingCount++;
+          }
+
           responses.push({
             sectionId: s.title,
             questionIndex: qIdx,
@@ -92,6 +100,11 @@ export default function StudentFeedbackForm() {
       formConfig.poQuestions?.forEach((q, qIdx) => {
         let val = answers[q._id || `poq_${qIdx}`];
         if (q.type === 'mcq' && val !== undefined && val !== '') val = q.options[Number(val)];
+
+        if (q.type === 'rating_1_5' && val) {
+          totalRating += Number(val);
+          ratingCount++;
+        }
 
         poResponses.push({
           poCode: q.poCode || 'General',
@@ -108,12 +121,14 @@ export default function StudentFeedbackForm() {
         });
       });
 
+      const calculatedOverall = ratingCount > 0 ? (totalRating / ratingCount) : 5;
+
       const payload = {
         eventId,
         responses,
         poResponses,
         openEndedResponses,
-        overallRating: 5 // Optional/unused in UI, keeping default
+        overallRating: calculatedOverall
       };
 
       await API.post(`/feedback/student`, payload);

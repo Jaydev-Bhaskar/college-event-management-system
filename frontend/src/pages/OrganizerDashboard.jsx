@@ -30,15 +30,18 @@ export default function OrganizerDashboard() {
   const [editingEvent, setEditingEvent] = useState(null);
   const [editLoading, setEditLoading] = useState(false);
   const [editForm, setEditForm] = useState({
-    title: '', description: '', location: '', category: '', date: '', time: '', endDate: '', endTime: '', maxParticipants: '', posterImage: ''
+    title: '', description: '', location: '', category: '', date: '', time: '', endDate: '', endTime: '', maxParticipants: '', posterImage: '', certificateTemplate: '',
+    registrationType: 'individual', minTeamSize: 1, maxTeamSize: 1, requiresApproval: false, isPaid: false, registrationFee: 0
   });
 
   const [form, setForm] = useState({
-    title: '', description: '', category: '', date: '', time: '', endDate: '', endTime: '', location: '', maxParticipants: '', posterImage: ''
+    title: '', description: '', category: '', date: '', time: '', endDate: '', endTime: '', location: '', maxParticipants: '', posterImage: '', certificateTemplate: '',
+    registrationType: 'individual', minTeamSize: 1, maxTeamSize: 1, requiresApproval: false, isPaid: false, registrationFee: 0
   });
 
   const [registrations, setRegistrations] = useState([]);
   const [regsLoading, setRegsLoading] = useState(false);
+  const [invitations, setInvitations] = useState([]);
 
   const categories = ['Technical', 'Cultural', 'Sports', 'Workshop', 'Seminar', 'Hackathon'];
 
@@ -56,6 +59,25 @@ export default function OrganizerDashboard() {
     {
       title: 'TOOLS',
       items: [
+        {
+          path: '/organizer/registrations',
+          label: 'Invitations',
+          icon: (
+            <div style={{ position: 'relative' }}>
+              <Users size={18} />
+              {invitations.length > 0 && (
+                <span style={{
+                  position: 'absolute', top: -5, right: -5,
+                  background: 'var(--danger)', color: 'white',
+                  fontSize: '0.6rem', padding: '0.1rem 0.3rem',
+                  borderRadius: 'var(--radius-full)', border: '2px solid white'
+                }}>
+                  {invitations.length}
+                </span>
+              )}
+            </div>
+          )
+        },
         { path: '/organizer/registrations', label: 'My Registrations', icon: <UserCircle size={18} /> },
       ]
     }
@@ -64,7 +86,26 @@ export default function OrganizerDashboard() {
   useEffect(() => { 
     fetchEvents(); 
     fetchRegistrations();
+    fetchInvitations();
   }, []);
+
+  const fetchInvitations = async () => {
+    try {
+      const res = await API.get('/registrations/invitations');
+      setInvitations(res.data);
+    } catch (err) { console.error(err); }
+  };
+
+  const respondToInvitation = async (registrationId, response) => {
+    try {
+      await API.post('/registrations/invitations/respond', { registrationId, response });
+      addToast(`Invitation ${response}ed!`, 'success');
+      fetchInvitations();
+      fetchRegistrations();
+    } catch (err) {
+      addToast('Action failed', 'error');
+    }
+  };
 
   const fetchRegistrations = async () => {
     setRegsLoading(true);
@@ -104,7 +145,11 @@ export default function OrganizerDashboard() {
         maxParticipants: form.maxParticipants ? Number(form.maxParticipants) : undefined,
       });
       addToast('Event proposal submitted successfully! Pending admin approval.', 'success');
-      setForm({ title: '', description: '', category: '', date: '', time: '', location: '', maxParticipants: '' });
+      setForm({ 
+        title: '', description: '', category: '', date: '', time: '', endDate: '', endTime: '', location: '', maxParticipants: '',
+        registrationType: 'individual', minTeamSize: 1, maxTeamSize: 1, requiresApproval: false, isPaid: false, registrationFee: 0,
+        posterImage: '', certificateTemplate: ''
+      });
       navigate('/organizer/events');
     } catch (err) {
       addToast(err.response?.data?.message || 'Failed to create event', 'error');
@@ -143,10 +188,20 @@ export default function OrganizerDashboard() {
       await API.put(`/events/${editingEvent._id}`, editForm);
       addToast('Event updated successfully!', 'success');
       setEditingEvent(null);
-      fetchMyEvents();
+      fetchEvents();
     } catch (err) {
       addToast(err.response?.data?.message || 'Failed to update event', 'error');
     } finally { setEditLoading(false); }
+  };
+
+  const updateStatus = async (registrationId, status) => {
+    try {
+      await API.put('/registrations/status', { registrationId, status });
+      addToast(`Registration ${status}!`, 'success');
+      if (selectedEvent) viewParticipants(selectedEvent);
+    } catch (err) {
+      addToast(err.response?.data?.message || 'Failed to update status', 'error');
+    }
   };
 
   const markAttendance = async (registrationId) => {
@@ -177,17 +232,41 @@ export default function OrganizerDashboard() {
 
   const renderFormFields = (formData, setFormData) => (
     <>
-      <label style={{ display: 'block', border: '2px dashed var(--border)', borderRadius: 'var(--radius-lg)', padding: '1.5rem', textAlign: 'center', marginBottom: '1.25rem', background: 'var(--bg-body)', cursor: 'pointer' }}>
-        <input type="file" accept="image/*" onChange={(e) => {
-          const file = e.target.files[0];
-          if (!file) return;
-          if (file.size > 10 * 1024 * 1024) return addToast('File too large', 'error');
-          const r = new FileReader(); r.onloadend = () => setFormData({...formData, posterImage: r.result}); r.readAsDataURL(file);
-        }} style={{ display: 'none' }} />
-        <Upload size={28} style={{ color: 'var(--primary)', marginBottom: '0.5rem', display: 'inline-block' }} />
-        <p style={{ fontWeight: 500, fontSize: '0.85rem' }}>{formData.posterImage ? 'Poster selected! Click to change' : 'Click to upload Event Poster'}</p>
-        <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Images only (max. 10MB)</p>
-      </label>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.25rem' }}>
+        <label style={{ display: 'block', border: '2px dashed var(--border)', borderRadius: 'var(--radius-lg)', padding: '1.5rem', textAlign: 'center', background: 'var(--bg-body)', cursor: 'pointer' }}>
+          <input type="file" accept="image/*" onChange={(e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            if (file.size > 10 * 1024 * 1024) return addToast('File too large', 'error');
+            const r = new FileReader(); 
+            r.onloadend = () => {
+              setFormData({...formData, posterImage: r.result});
+              e.target.value = null;
+            };
+            r.readAsDataURL(file);
+          }} style={{ display: 'none' }} />
+          <Upload size={28} style={{ color: 'var(--primary)', marginBottom: '0.5rem', display: 'inline-block' }} />
+          <p style={{ fontWeight: 500, fontSize: '0.85rem' }}>{formData.posterImage ? 'Poster selected! Click to change' : 'Upload Event Poster'}</p>
+          <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Images only (max. 10MB)</p>
+        </label>
+
+        <label style={{ display: 'block', border: '2px dashed var(--border)', borderRadius: 'var(--radius-lg)', padding: '1.5rem', textAlign: 'center', background: 'var(--bg-body)', cursor: 'pointer' }}>
+          <input type="file" accept="image/*" onChange={(e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            if (file.size > 10 * 1024 * 1024) return addToast('File too large', 'error');
+            const r = new FileReader(); 
+            r.onloadend = () => {
+              setFormData({...formData, certificateTemplate: r.result});
+              e.target.value = null;
+            };
+            r.readAsDataURL(file);
+          }} style={{ display: 'none' }} />
+          <FileText size={28} style={{ color: '#7C3AED', marginBottom: '0.5rem', display: 'inline-block' }} />
+          <p style={{ fontWeight: 500, fontSize: '0.85rem' }}>{formData.certificateTemplate ? 'Certificate Template selected!' : 'Upload Certificate Template (Optional)'}</p>
+          <p style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Images only (max. 10MB)</p>
+        </label>
+      </div>
 
       <div className="form-group mb-3">
         <label className="form-label">Event Title</label>
@@ -222,14 +301,12 @@ export default function OrganizerDashboard() {
           <label className="form-label">Start Time</label>
           <input type="time" className="form-input" value={formData.time || ''} onChange={(e) => setFormData({ ...formData, time: e.target.value })} />
         </div>
-      </div>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '1rem' }}>
         <div className="form-group" style={{ marginBottom: 0 }}>
-          <label className="form-label">End Date</label>
+          <label className="form-label">End Date (Optional)</label>
           <input type="date" className="form-input" value={formData.endDate ? new Date(formData.endDate).toISOString().split('T')[0] : ''} onChange={(e) => setFormData({ ...formData, endDate: e.target.value })} />
         </div>
         <div className="form-group" style={{ marginBottom: 0 }}>
-          <label className="form-label">End Time</label>
+          <label className="form-label">End Time (Optional)</label>
           <input type="time" className="form-input" value={formData.endTime || ''} onChange={(e) => setFormData({ ...formData, endTime: e.target.value })} />
         </div>
       </div>
@@ -237,6 +314,70 @@ export default function OrganizerDashboard() {
         <label className="form-label">Location</label>
         <input className="form-input" placeholder="e.g. Main Auditorium" value={formData.location || ''} onChange={(e) => setFormData({ ...formData, location: e.target.value })} />
       </div>
+
+      <h3 style={{ fontWeight: 700, marginBottom: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.95rem', marginTop: '1.5rem' }}>
+        <CheckCircle2 size={16} style={{ color: 'var(--primary)' }} /> Registration Configuration
+      </h3>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
+        <div className="form-group" style={{ marginBottom: 0 }}>
+          <label className="form-label">Registration Type</label>
+          <select className="form-input" value={formData.registrationType || 'individual'} onChange={(e) => setFormData({ ...formData, registrationType: e.target.value })}>
+            <option value="individual">Individual Participation</option>
+            <option value="team">Team Participation</option>
+          </select>
+        </div>
+        <div className="form-group" style={{ marginBottom: 0, display: 'flex', alignItems: 'center', gap: '0.5rem', paddingTop: '1.5rem' }}>
+          <input 
+            type="checkbox" 
+            id="requiresApproval"
+            checked={formData.requiresApproval} 
+            onChange={(e) => setFormData({ ...formData, requiresApproval: e.target.checked })} 
+          />
+          <label htmlFor="requiresApproval" className="form-label" style={{ marginBottom: 0 }}>Requires Approval</label>
+        </div>
+      </div>
+
+        {formData.registrationType === 'team' && (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '0.5rem' }}>
+          <div className="form-group">
+            <label className="form-label">Min Team Size</label>
+            <input type="number" className="form-input" value={formData.minTeamSize || 1} onChange={(e) => setFormData({ ...formData, minTeamSize: e.target.value })} />
+          </div>
+          <div className="form-group">
+            <label className="form-label">Max Team Size</label>
+            <input type="number" className="form-input" value={formData.maxTeamSize || 1} onChange={(e) => setFormData({ ...formData, maxTeamSize: e.target.value })} />
+          </div>
+        </div>
+      )}
+
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '1rem', marginBottom: '1rem' }}>
+        <div className="form-group" style={{ marginBottom: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <input 
+            type="checkbox" 
+            id="isPaid"
+            checked={formData.isPaid} 
+            onChange={(e) => setFormData({ ...formData, isPaid: e.target.checked })} 
+          />
+          <label htmlFor="isPaid" className="form-label" style={{ marginBottom: 0 }}>Paid Event</label>
+        </div>
+        {formData.isPaid && (
+          <div className="form-group" style={{ marginBottom: 0 }}>
+            <label className="form-label">Registration Fee (₹)</label>
+            <input type="number" className="form-input" value={formData.registrationFee || 0} onChange={(e) => setFormData({ ...formData, registrationFee: e.target.value })} />
+          </div>
+        )}
+      </div>
+
+      <h3 style={{ fontWeight: 700, marginBottom: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.95rem', marginTop: '0.5rem' }}>
+        <Users size={16} style={{ color: 'var(--success)' }} /> Communications
+      </h3>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1rem' }}>
+        <div className="form-group" style={{ marginBottom: 0 }}>
+          <label className="form-label">Organizer Contact Info</label>
+          <input className="form-input" placeholder="Phone or Email" value={formData.organizerContact || ''} onChange={(e) => setFormData({ ...formData, organizerContact: e.target.value })} />
+        </div>
+      </div>
+      <div style={{ marginBottom: '1rem' }}></div>
     </>
   );
 
@@ -324,17 +465,45 @@ export default function OrganizerDashboard() {
                         {p.userId?.name?.charAt(0).toUpperCase() || '?'}
                       </div>
                       <div>
-                        <div style={{ fontWeight: 600, fontSize: '0.95rem' }}>{p.userId?.name || 'Unknown User'}</div>
-                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{p.userId?.email || 'N/A'}</div>
+                        <div style={{ fontWeight: 600, fontSize: '0.95rem' }}>
+                          {p.userId?.name || 'Unknown User'}
+                          {p.teamName && <span style={{ color: 'var(--primary)', marginLeft: '0.35rem' }}>[{p.teamName}]</span>}
+                        </div>
+                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{p.userId?.email || 'N/A'} • {p.userId?.studentId || 'ID N/A'}</div>
+                        {p.teamMembers && p.teamMembers.length > 0 && (
+                          <div style={{ fontSize: '0.75rem', marginTop: '0.15rem', color: 'var(--primary)', fontWeight: 500 }}>
+                            Team: {p.teamMembers.map(tm => tm.name).join(', ')}
+                          </div>
+                        )}
                       </div>
                     </div>
-                    {p.attendanceStatus === 'present' ? (
-                      <span className="badge badge-success"><CheckCircle2 size={12} style={{ marginRight: 4 }} /> Present</span>
-                    ) : (
-                      <button className="btn btn-primary btn-sm" style={{ padding: '0.25rem 0.75rem', fontSize: '0.75rem' }} onClick={() => markAttendance(p._id)}>
-                        <QrCode size={12} style={{ marginRight: 4 }} /> Mark Present
-                      </button>
-                    )}
+                    <div className="participant-actions" style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                      {p.teamName && (
+                        <span className="badge badge-info" style={{ fontSize: '0.7rem' }}>Team: {p.teamName}</span>
+                      )}
+
+                      {p.paymentScreenshot && (
+                        <button className="btn btn-ghost btn-sm" style={{ padding: '0.1rem 0.4rem', fontSize: '0.65rem' }} onClick={() => {
+                          const win = window.open();
+                          win.document.write(`<img src="${p.paymentScreenshot}" style="max-width:100%"/>`);
+                        }}>View Payment</button>
+                      )}
+                      
+                      {p.registrationStatus === 'pending' ? (
+                        <>
+                          <button className="btn btn-success btn-sm" onClick={() => updateStatus(p._id, 'confirmed')}>Approve</button>
+                          <button className="btn btn-danger btn-sm" onClick={() => updateStatus(p._id, 'rejected')}>Reject</button>
+                        </>
+                      ) : p.registrationStatus === 'rejected' ? (
+                        <span className="badge badge-danger">Rejected</span>
+                      ) : p.attendanceStatus === 'present' ? (
+                        <span className="badge badge-success"><CheckCircle2 size={12} style={{ marginRight: 4 }} /> Present</span>
+                      ) : (
+                        <button className="btn btn-primary btn-sm" style={{ padding: '0.25rem 0.75rem', fontSize: '0.75rem' }} onClick={() => markAttendance(p._id)}>
+                          <QrCode size={12} style={{ marginRight: 4 }} /> Mark Present
+                        </button>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>
@@ -448,6 +617,41 @@ export default function OrganizerDashboard() {
     // Default Dashboard & /organizer/events
     return (
       <>
+        {/* Team Invitations */}
+        {invitations.length > 0 && (
+          <div className="glass-card-static" style={{ padding: '1.25rem', marginBottom: '1.5rem', background: 'rgba(255, 255, 255, 0.6)', border: '2px solid var(--primary-light)' }}>
+            <h2 style={{ fontSize: '1.1rem', fontWeight: 700, marginBottom: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'var(--primary)' }}>
+              <Users size={20} /> Team Invitations Pending
+            </h2>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '1rem' }}>
+              {invitations.map((inv) => (
+                <div key={inv._id} style={{ background: 'white', padding: '1rem', borderRadius: 'var(--radius-md)', boxShadow: 'var(--shadow-sm)', border: '1px solid var(--border)' }}>
+                  <div style={{ fontWeight: 700, fontSize: '1rem', marginBottom: '0.25rem' }}>{inv.eventId?.title}</div>
+                  <div style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '1rem' }}>
+                    Team: <span style={{ fontWeight: 600, color: 'var(--text-primary)' }}>{inv.teamName}</span>
+                  </div>
+                  <div style={{ display: 'flex', gap: '0.5rem' }}>
+                    <button 
+                      className="btn btn-primary btn-sm" 
+                      style={{ flex: 1, padding: '0.35rem' }} 
+                      onClick={() => respondToInvitation(inv._id, 'accept')}
+                    >
+                      Accept
+                    </button>
+                    <button 
+                      className="btn btn-outline btn-sm" 
+                      style={{ flex: 1, padding: '0.35rem', color: 'var(--danger)', borderColor: 'var(--danger)' }} 
+                      onClick={() => respondToInvitation(inv._id, 'decline')}
+                    >
+                      Decline
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* Stats */}
         <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
           <div className="stat-card blue">
@@ -570,7 +774,14 @@ export default function OrganizerDashboard() {
                                   endDate: evt.endDate || '',
                                   endTime: evt.endTime || '',
                                   maxParticipants: evt.maxParticipants || '',
-                                  posterImage: evt.posterImage || ''
+                                  posterImage: evt.posterImage || '',
+                                  certificateTemplate: evt.certificateTemplate || '',
+                                  registrationType: evt.registrationType || 'individual',
+                                  minTeamSize: evt.minTeamSize || 1,
+                                  maxTeamSize: evt.maxTeamSize || 1,
+                                  requiresApproval: evt.requiresApproval || false,
+                                  isPaid: evt.isPaid || false,
+                                  registrationFee: evt.registrationFee || 0
                                 });
                               }}>
                               <Edit3 size={13} style={{ marginRight: 2 }} /> Edit
