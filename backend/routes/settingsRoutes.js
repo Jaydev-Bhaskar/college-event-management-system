@@ -6,6 +6,9 @@ const { getSettings, updateSettings } = require("../controllers/settingsControll
 const authMiddleware = require("../middleware/authMiddleware");
 const roleMiddleware = require("../middleware/roleMiddleware");
 
+// GET /api/settings/public
+router.get("/public", getSettings);
+
 // GET /api/settings?department=...
 router.get("/", authMiddleware, getSettings);
 

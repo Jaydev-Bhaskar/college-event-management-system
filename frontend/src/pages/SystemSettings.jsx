@@ -95,12 +95,12 @@ export default function SystemSettingsPage() {
     <div className="dashboard-layout">
       <Sidebar links={sidebarLinks} />
       <main className="dashboard-content">
-        <div className="dashboard-header">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2rem' }}>
           <div>
-            <h1>System Settings</h1>
-            <p className="text-secondary">Configure platform settings for {user.department}</p>
+            <h1 style={{ fontSize: '1.75rem', fontWeight: 800, marginBottom: '0.2rem' }}>System Settings</h1>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>Configure platform settings for {user.department}</p>
           </div>
-          <button className="btn-primary" onClick={handleSave} disabled={saving}>
+          <button className="btn btn-primary" onClick={handleSave} disabled={saving}>
             {saving ? 'Saving...' : 'Save Settings'}
           </button>
         </div>
@@ -110,9 +110,10 @@ export default function SystemSettingsPage() {
           <div className="settings-card">
             <h3>🏫 Institution</h3>
             <div className="form-group">
-              <label>Institution Name</label>
+              <label className="form-label">Institution Name</label>
               <input
                 type="text"
+                className="form-input"
                 value={settings.institutionName || ''}
                 onChange={(e) => setSettings(prev => ({ ...prev, institutionName: e.target.value }))}
                 placeholder="e.g. XYZ College of Engineering"
@@ -120,19 +121,81 @@ export default function SystemSettingsPage() {
             </div>
           </div>
 
+          {/* Communications */}
+          <div className="settings-card">
+            <h3>💬 Communications</h3>
+            <div className="form-group">
+              <label className="form-label">Global Notification WhatsApp Group Link</label>
+              <input
+                type="url"
+                className="form-input"
+                value={settings.globalWhatsappLink || ''}
+                onChange={(e) => setSettings(prev => ({ ...prev, globalWhatsappLink: e.target.value }))}
+                placeholder="https://chat.whatsapp.com/..."
+              />
+              <p className="form-hint" style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Students will see this link to join the central notification group.</p>
+            </div>
+          </div>
+
+          {/* Payments */}
+          <div className="settings-card">
+            <h3>💰 Payments</h3>
+            <div className="form-group mb-3">
+              <label className="form-label">UPI ID</label>
+              <input
+                type="text"
+                className="form-input"
+                value={settings.upiId || ''}
+                onChange={(e) => setSettings(prev => ({ ...prev, upiId: e.target.value }))}
+                placeholder="college@upi"
+              />
+            </div>
+            <div className="form-group">
+              <label className="form-label">Payment QR Code</label>
+              <div style={{ 
+                border: '2px dashed var(--border)', 
+                borderRadius: 'var(--radius-md)', 
+                padding: '1rem', 
+                textAlign: 'center',
+                background: 'var(--bg-body)',
+                cursor: 'pointer',
+                position: 'relative'
+              }}>
+                <input 
+                  type="file" 
+                  accept="image/*" 
+                  style={{ position: 'absolute', inset: 0, opacity: 0, cursor: 'pointer' }} 
+                  onChange={(e) => {
+                    const file = e.target.files[0];
+                    if (!file) return;
+                    const r = new FileReader();
+                    r.onloadend = () => setSettings(prev => ({ ...prev, paymentQRCode: r.result }));
+                    r.readAsDataURL(file);
+                  }}
+                />
+                {settings.paymentQRCode ? (
+                  <img src={settings.paymentQRCode} alt="Payment QR" style={{ maxHeight: 100, display: 'block', margin: '0 auto' }} />
+                ) : (
+                  <div style={{ color: 'var(--text-muted)', fontSize: '0.8rem' }}>Click to upload payment QR code</div>
+                )}
+              </div>
+            </div>
+          </div>
+
           {/* Event Managers */}
           <div className="settings-card">
             <h3>👥 Event Managers</h3>
             <div className="form-group">
-              <label>Maximum Event Managers per Event</label>
+              <label className="form-label">Maximum Event Managers per Event</label>
               <input
                 type="number"
+                className="form-input"
                 min="1"
                 max="20"
                 value={settings.maxEventManagers}
                 onChange={(e) => setSettings(prev => ({ ...prev, maxEventManagers: parseInt(e.target.value) || 5 }))}
               />
-              <p className="form-hint">Organizers can assign up to this many managers per event</p>
+              <p className="form-hint" style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Organizers can assign up to this many managers per event</p>
             </div>
           </div>
 
@@ -140,15 +203,16 @@ export default function SystemSettingsPage() {
           <div className="settings-card">
             <h3>⏱️ Organizer Grace Period</h3>
             <div className="form-group">
-              <label>Days after last event ends</label>
+              <label className="form-label">Days after last event ends</label>
               <input
                 type="number"
+                className="form-input"
                 min="7"
                 max="90"
                 value={settings.organizerGracePeriodDays}
                 onChange={(e) => setSettings(prev => ({ ...prev, organizerGracePeriodDays: parseInt(e.target.value) || 30 }))}
               />
-              <p className="form-hint">Organizer privilege is auto-reverted after this many days with no active events</p>
+              <p className="form-hint" style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Organizer privilege is auto-reverted after this many days with no active events</p>
             </div>
           </div>
 
@@ -163,15 +227,16 @@ export default function SystemSettingsPage() {
                 </span>
               ))}
             </div>
-            <div className="settings-add-category">
+            <div className="settings-add-category" style={{ display: 'flex', gap: '0.5rem' }}>
               <input
                 type="text"
+                className="form-input"
                 placeholder="New category..."
                 value={newCategory}
                 onChange={(e) => setNewCategory(e.target.value)}
                 onKeyDown={(e) => e.key === 'Enter' && (e.preventDefault(), addCategory())}
               />
-              <button className="btn-secondary" onClick={addCategory}>Add</button>
+              <button className="btn btn-secondary" onClick={addCategory}>Add</button>
             </div>
           </div>
         </div>

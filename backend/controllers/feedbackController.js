@@ -141,7 +141,7 @@ exports.getFeedbackAnalytics = async (req, res) => {
         
         // Convert value to number if possible (for ratings)
         // If it's an MCQ, we assume the frontend sends a numeric value or 1 for correct
-        const val = Number(pr.value);
+        const val = Number(pr.selectedOption || pr.value);
         if (!isNaN(val)) {
           poAverages[pr.poCode].sum += val;
           poAverages[pr.poCode].count += 1;
@@ -193,12 +193,56 @@ exports.getFeedbackAnalytics = async (req, res) => {
       flattenedPOs[code] = p.count > 0 ? (p.sum / p.count).toFixed(2) : 0;
     });
 
+    // Calculate true overall average dynamically (ignoring legacy overallRating)
+    let trueOverallSum = 0;
+    let trueOverallCount = 0;
+    
+    const ratingQuestionKeys = new Set();
+    const poRatingQuestionKeys = new Set();
+    
+    form.sections?.forEach(s => {
+      s.questions?.forEach((q, qIdx) => {
+        if (q.type === 'rating_1_5' || q.type === 'rating_1_3') {
+           ratingQuestionKeys.add(`${s.title}_${qIdx}`);
+        }
+      });
+    });
+    
+    form.poQuestions?.forEach((q, qIdx) => {
+      if (q.type === 'rating_1_5' || q.type === 'rating_1_3') {
+         poRatingQuestionKeys.add(qIdx);
+      }
+    });
+
+    feedbacks.forEach(fb => {
+      fb.responses?.forEach(r => {
+        if (ratingQuestionKeys.has(`${r.sectionId}_${r.questionIndex}`)) {
+           const val = Number(r.value);
+           if (!isNaN(val)) {
+              trueOverallSum += val;
+              trueOverallCount += 1;
+           }
+        }
+      });
+      fb.poResponses?.forEach(pr => {
+        if (poRatingQuestionKeys.has(pr.questionIndex)) {
+           const val = Number(pr.selectedOption || pr.value);
+           if (!isNaN(val)) {
+              trueOverallSum += val;
+              trueOverallCount += 1;
+           }
+        }
+      });
+    });
+
+    const calculatedOverallAverage = trueOverallCount > 0 ? (trueOverallSum / trueOverallCount).toFixed(2) : "0.00";
+
     res.json({
       eventId,
       totalResponses: feedbacks.length,
       sectionAverages: computedSections,
       poAverages: flattenedPOs,
-      overallAverage: overallCount > 0 ? (overallSum / overallCount).toFixed(2) : 0,
+      overallAverage: calculatedOverallAverage,
       openEndedResponses: openEndedCollected,
       expertFeedbacks,
       formStructure: form

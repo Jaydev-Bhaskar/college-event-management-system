@@ -4,9 +4,14 @@ import { CalendarDays, MapPin } from 'lucide-react';
 export default function EventCard({ event }) {
   if (!event) return null;
 
-  const formatDate = (d) => {
+  const formatTime = (d, t) => {
     if (!d) return '';
-    const date = new Date(d);
+    const datePart = d.split('T')[0];
+    const [year, month, day] = datePart.split('-').map(Number);
+    const startStr = t || "00:00";
+    const [sHours, sMinutes] = startStr.split(':').map(Number);
+    const date = new Date(year, month - 1, day, isNaN(sHours) ? 0 : sHours, isNaN(sMinutes) ? 0 : sMinutes, 0);
+    
     return date.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' }) +
       ' • ' + date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
   };
@@ -39,13 +44,29 @@ export default function EventCard({ event }) {
               {getCategoryLabel(event.category)}
             </span>
           )}
+          {event.registrationType === 'team' && (
+            <span style={{ 
+              position: 'absolute', 
+              top: '0.75rem', 
+              right: '0.75rem', 
+              background: 'rgba(0,0,0,0.6)', 
+              color: 'white', 
+              fontSize: '0.65rem', 
+              fontWeight: 700, 
+              padding: '0.2rem 0.5rem', 
+              borderRadius: 'var(--radius-sm)',
+              backdropFilter: 'blur(4px)'
+            }}>
+              TEAM EVENT
+            </span>
+          )}
         </div>
 
         <div className="event-card-body">
           <h3 className="event-card-title">{event.title}</h3>
           <div className="event-card-meta">
             <span className="event-card-meta-item">
-              <CalendarDays size={12} /> {formatDate(event.date)}
+              <CalendarDays size={12} /> {formatTime(event.date, event.time)}
             </span>
             {event.location && (
               <span className="event-card-meta-item">

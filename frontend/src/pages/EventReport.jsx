@@ -418,83 +418,96 @@ export default function EventReport() {
         </div>
 
         {/* Expert Feedback Table */}
-        {analytics?.expertFeedbacks?.length > 0 && (
+        {analytics?.expertFeedbacks?.length > 0 && analytics?.formStructure?.expertSection?.questions?.length > 0 && (
           <>
             <div className="report-section-title">Expert's Feedback Analysis:</div>
             <table className="report-table" style={{ textAlign: 'center' }}>
               <thead>
                 <tr>
                   <th>Particular</th>
-                  {[1,2,3,4,5,6,7,8].map(n => <th key={n}>{n}</th>)}
+                  {analytics.formStructure.expertSection.questions.map((q, idx) => (
+                    <th key={idx}>{idx + 1}</th>
+                  ))}
                 </tr>
               </thead>
               <tbody>
                 <tr>
                   <td style={{ textAlign: 'left' }}>Response</td>
-                  {[0,1,2,3,4,5,6,7].map(idx => (
+                  {analytics.formStructure.expertSection.questions.map((q, idx) => (
                     <td key={idx}>{analytics.expertFeedbacks[0].responses?.find(r => r.questionIndex === idx)?.value || 'NA'}</td>
                   ))}
                 </tr>
               </tbody>
             </table>
             <p style={{ fontSize: '0.75rem', fontStyle: 'italic', marginBottom: '1rem' }}>
-              (1: Audio Visual, 2: Cooperation, 3: Understanding Level, 4: Interaction, 5: Question Level, 6: Food, 7: Accommodation, 8: Overall)
+              ({analytics.formStructure.expertSection.questions.map((q, idx) => `${idx + 1}: ${q.text}`).join(', ')})
             </p>
           </>
         )}
 
         {/* Students Feedback Section */}
-        <div className="report-section-title">Students Feedback Analysis:</div>
-        <table className="report-table" style={{ textAlign: 'center' }}>
-          <thead>
-            <tr>
-              <th>Section / Question</th>
-              <th>1</th><th>2</th><th>3</th><th>4</th><th>5</th>
-              <th>Avg.</th>
-            </tr>
-          </thead>
-          <tbody>
-            {analytics?.sectionAverages && Object.keys(analytics.sectionAverages).map(sectionTitle => (
-              <tr key={sectionTitle}>
-                <td style={{ textAlign: 'left' }}><strong>{sectionTitle}</strong></td>
-                <td colSpan="5" style={{ fontSize: '0.7rem', color: '#666' }}>-- Aggregated Section Average --</td>
-                <td>{analytics.sectionAverages[sectionTitle].average}</td>
-              </tr>
-            ))}
-            <tr style={{ background: '#f9fafb' }}>
-              <td style={{ textAlign: 'left' }}><strong>Overall Satisfaction</strong></td>
-              <td colSpan="5"></td>
-              <td><strong>{analytics?.overallAverage || 'N/A'}</strong></td>
-            </tr>
-          </tbody>
-        </table>
+        {analytics?.formStructure?.sections?.length > 0 && (
+          <>
+            <div className="report-section-title">Students Feedback Analysis:</div>
+            <table className="report-table" style={{ textAlign: 'center' }}>
+              <thead>
+                <tr>
+                  <th style={{ textAlign: 'left' }}>Section / Question</th>
+                  <th>Avg. Rating (out of 5)</th>
+                </tr>
+              </thead>
+              <tbody>
+                {analytics.formStructure.sections.map(section => {
+                  if (!section.questions || section.questions.length === 0) return null;
+                  const sectionKey = section.title;
+                  const rows = [];
+                  rows.push(
+                    <tr key={section._id} style={{ backgroundColor: '#f3f4f6' }}>
+                      <td style={{ textAlign: 'left' }}><strong>{section.title}</strong></td>
+                      <td><strong>{analytics.sectionAverages?.[sectionKey]?.average || '0.00'}</strong></td>
+                    </tr>
+                  );
+                  section.questions.forEach((q, idx) => {
+                    rows.push(
+                      <tr key={q._id || `${section._id}_q${idx}`}>
+                        <td style={{ textAlign: 'left', paddingLeft: '2rem' }}>{q.text}</td>
+                        <td>{analytics.sectionAverages?.[sectionKey]?.questions?.[`${sectionKey}_q${idx}`]?.average || '0.00'}</td>
+                      </tr>
+                    );
+                  });
+                  return rows;
+                })}
+                <tr style={{ background: '#e5e7eb' }}>
+                  <td style={{ textAlign: 'left' }}><strong>Overall Satisfaction</strong></td>
+                  <td><strong>{analytics?.overallAverage || 'N/A'}</strong></td>
+                </tr>
+              </tbody>
+            </table>
+          </>
+        )}
 
         {/* PO Mapping Table */}
-        <div className="report-section-title">PO / PSO Mapping Analysis:</div>
-        <table className="report-table" style={{ textAlign: 'center' }}>
-          <thead>
-            <tr>
-              {analytics?.poAverages && Object.keys(analytics.poAverages).length > 0 ? (
-                Object.keys(analytics.poAverages).map(code => <th key={code}>{code}</th>)
-              ) : (
-                ['PO1', 'PO2', 'PO5', 'PO7', 'PSO3'].map(code => <th key={code}>{code}</th>)
-              )}
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              {analytics?.poAverages && Object.keys(analytics.poAverages).length > 0 ? (
-                Object.keys(analytics.poAverages).map(code => (
-                  <td key={code}>{analytics.poAverages[code]}</td>
-                ))
-              ) : (
-                [4.03, 4.57, 4.53, 4.62, 4.45].map((val, i) => (
-                  <td key={i}>{val}</td>
-                ))
-              )}
-            </tr>
-          </tbody>
-        </table>
+        {analytics?.formStructure?.poQuestions?.length > 0 && (
+          <>
+            <div className="report-section-title">PO / PSO Mapping Analysis:</div>
+            <table className="report-table" style={{ textAlign: 'center' }}>
+              <thead>
+                <tr>
+                  {analytics.formStructure.poQuestions.map((q, idx) => (
+                    <th key={q._id || idx}>{q.poCode}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  {analytics.formStructure.poQuestions.map((q, idx) => (
+                    <td key={q._id || idx}>{analytics.poAverages?.[q.poCode] || '0'}</td>
+                  ))}
+                </tr>
+              </tbody>
+            </table>
+          </>
+        )}
 
         <div className="report-section-title">Action Taken</div>
         <p style={{ fontSize: '0.9rem' }}>

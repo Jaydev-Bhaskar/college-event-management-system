@@ -60,8 +60,8 @@ export default function OrganizerEventView() {
   }, [eventId]);
 
   useEffect(() => {
-    if (activeTab === 'attendance') fetchParticipants();
-    if (activeTab === 'report') fetchAnalytics();
+    if (activeTab === 'attendance' || activeTab === 'feedback') fetchParticipants();
+    if (activeTab === 'report' || activeTab === 'feedback') fetchAnalytics();
   }, [activeTab]);
 
   // Cleanup camera on unmount
@@ -378,7 +378,7 @@ export default function OrganizerEventView() {
 
       {/* Quick Analytics Preview */}
       {analytics && (
-        <div className="glass-card-static" style={{ padding: '1.5rem' }}>
+        <div className="glass-card-static" style={{ padding: '1.5rem', marginBottom: '1.5rem' }}>
           <h3 style={{ fontWeight: 700, marginBottom: '1rem' }}>Feedback Summary</h3>
           <div className="stats-grid" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
             <div className="stat-card blue">
@@ -396,6 +396,57 @@ export default function OrganizerEventView() {
           </div>
         </div>
       )}
+
+      {/* Student Feedback Tracking */}
+      <div className="glass-card-static" style={{ padding: '1.5rem' }}>
+        <div className="flex-between" style={{ marginBottom: '1rem' }}>
+          <h3 style={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+            <Users size={20} /> Student Feedback Status
+          </h3>
+          <span style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
+            {participants.filter(p => p.feedbackSubmitted).length} of {participants.length} submitted
+          </span>
+        </div>
+
+        {participantsLoading ? (
+          <div className="spinner-overlay" style={{ minHeight: 100 }}><div className="spinner" /></div>
+        ) : participants.length === 0 ? (
+          <p className="text-secondary" style={{ fontSize: '0.9rem' }}>No participants registered yet.</p>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+            {participants.map((p) => (
+              <div key={p._id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.75rem 1rem', borderBottom: '1px solid var(--border)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  <div style={{
+                    width: 36, height: 36, borderRadius: '50%',
+                    background: p.feedbackSubmitted ? 'var(--success-bg, #dcfce7)' : 'var(--bg-body)',
+                    color: p.feedbackSubmitted ? 'var(--success)' : 'var(--text-muted)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    fontWeight: 700, fontSize: '0.9rem'
+                  }}>
+                    {p.userId?.name?.charAt(0)?.toUpperCase() || '?'}
+                  </div>
+                  <div>
+                    <div style={{ fontWeight: 600, fontSize: '0.95rem' }}>{p.userId?.name || 'Unknown User'}</div>
+                    <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{p.userId?.email}</div>
+                  </div>
+                </div>
+                <div>
+                  {p.feedbackSubmitted ? (
+                    <span className="badge badge-success" style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                      <CheckCircle2 size={13} /> Submitted
+                    </span>
+                  ) : (
+                    <span className="badge" style={{ display: 'flex', alignItems: 'center', gap: 4, background: 'var(--bg-body)', color: 'var(--text-muted)' }}>
+                      <Clock size={13} /> Pending
+                    </span>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </>
   );
 

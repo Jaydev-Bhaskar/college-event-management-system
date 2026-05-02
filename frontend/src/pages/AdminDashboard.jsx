@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
 import API from '../api/axios';
@@ -19,6 +19,10 @@ export default function AdminDashboard() {
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(null);
+  const [reportFilterDate, setReportFilterDate] = useState('');
+  const [reportFilterCategory, setReportFilterCategory] = useState('');
+  const [settings, setSettings] = useState(null);
+  const [settingsLoading, setSettingsLoading] = useState(false);
 
   const sidebarLinks = [
     {
@@ -44,14 +48,16 @@ export default function AdminDashboard() {
 
   const fetchAll = async () => {
     try {
-      const [reqRes, evtRes, usrRes] = await Promise.all([
+      const [reqRes, evtRes, usrRes, settingsRes] = await Promise.all([
         API.get('/admin/organizer-requests'),
         API.get('/events'),
         API.get('/admin/users'),
+        API.get('/settings')
       ]);
       setRequests(reqRes.data);
       setEvents(evtRes.data);
       setStudents(usrRes.data);
+      setSettings(settingsRes.data);
     } catch (err) {
       console.error(err);
     } finally { setLoading(false); }
@@ -103,6 +109,19 @@ export default function AdminDashboard() {
     } finally { setActionLoading(null); }
   };
 
+  const handleSaveSettings = async (e) => {
+    e.preventDefault();
+    setSettingsLoading(true);
+    try {
+      await API.put('/settings', settings);
+      addToast('Settings updated successfully', 'success');
+    } catch (err) {
+      addToast('Failed to update settings', 'error');
+    } finally {
+      setSettingsLoading(false);
+    }
+  };
+
   const pendingRequests = requests.filter(r => r.status === 'pending');
   const approvedRequests = requests.filter(r => r.status === 'approved');
   const activeEvents = events.filter(e => {
@@ -117,6 +136,7 @@ export default function AdminDashboard() {
 
   const location = useLocation();
   const path = location.pathname;
+  const navigate = useNavigate();
 
   const renderContent = () => {
     if (path === '/admin/requests') {
@@ -337,15 +357,66 @@ export default function AdminDashboard() {
     }
 
     if (path === '/admin/reports') {
+      let filteredReports = [...events];
+      
+      if (reportFilterDate) {
+        filteredReports = filteredReports.filter(e => {
+          if (!e.date) return false;
+          return new Date(e.date).toISOString().split('T')[0] === reportFilterDate;
+        });
+      }
+      
+      if (reportFilterCategory) {
+        filteredReports = filteredReports.filter(e => e.category === reportFilterCategory);
+      }
+      
+      // Sort by newest first
+      filteredReports.sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0));
+      
+      // Show top 10 default if no filters applied
+      if (!reportFilterDate && !reportFilterCategory) {
+        filteredReports = filteredReports.slice(0, 10);
+      }
+
+      const categories = ['Technical', 'Cultural', 'Sports', 'Workshop', 'Seminar', 'Hackathon'];
+
       return (
         <>
-          <div>
-            <h1 style={{ fontSize: '1.75rem', fontWeight: 800, marginBottom: '0.2rem' }}>Department Event Reports</h1>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
-              Access feedback, mapping, and PO/PSO analytics for all events hosted within {user.department || 'the system'}.
-            </p>
+          <div className="flex-between mb-4">
+            <div>
+              <h1 style={{ fontSize: '1.75rem', fontWeight: 800, marginBottom: '0.2rem' }}>Department Event Reports</h1>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>
+                Access feedback, mapping, and PO/PSO analytics for all events hosted within {user.department || 'the system'}.
+              </p>
+            </div>
+            <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
+              <input 
+                type="date" 
+                className="form-input" 
+                value={reportFilterDate}
+                onChange={e => setReportFilterDate(e.target.value)}
+                style={{ padding: '0.4rem 0.75rem', fontSize: '0.85rem' }}
+              />
+              <select 
+                className="form-input" 
+                value={reportFilterCategory}
+                onChange={e => setReportFilterCategory(e.target.value)}
+                style={{ padding: '0.4rem 0.75rem', fontSize: '0.85rem' }}
+              >
+                <option value="">All Types</option>
+                {categories.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+              {(reportFilterDate || reportFilterCategory) && (
+                <button 
+                  className="btn btn-ghost btn-sm"
+                  onClick={() => { setReportFilterDate(''); setReportFilterCategory(''); }}
+                >
+                  Clear
+                </button>
+              )}
+            </div>
           </div>
-          {events.length === 0 ? (
+          {filteredReports.length === 0 ? (
             <div className="glass-card-static empty-state" style={{ padding: '3rem 2rem' }}>
               <FileText size={48} />
               <h3>No Reports Available</h3>
@@ -353,7 +424,7 @@ export default function AdminDashboard() {
             </div>
           ) : (
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1.25rem' }}>
-              {events.map((evt) => (
+              {filteredReports.map((evt) => (
                 <div key={evt._id} className="event-card" style={{ display: 'flex', flexDirection: 'column' }}>
                   <div className="event-card-body" style={{ padding: '1.5rem', flex: 1 }}>
                     <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '0.75rem' }}>

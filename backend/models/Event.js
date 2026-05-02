@@ -53,6 +53,37 @@ const eventSchema = new mongoose.Schema({
     default: "draft"
   },
 
+  registrationType: {
+    type: String,
+    enum: ["individual", "team"],
+    default: "individual"
+  },
+
+  minTeamSize: {
+    type: Number,
+    default: 1
+  },
+
+  maxTeamSize: {
+    type: Number,
+    default: 1
+  },
+
+  requiresApproval: {
+    type: Boolean,
+    default: false
+  },
+
+  isPaid: {
+    type: Boolean,
+    default: false
+  },
+
+  registrationFee: {
+    type: Number,
+    default: 0
+  },
+
   posterImage: {
     type: String
   },
@@ -60,6 +91,20 @@ const eventSchema = new mongoose.Schema({
   feedbackFormId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "FeedbackForm"
+  },
+
+  certificateTemplate: {
+    type: String
+  },
+
+  organizerContact: {
+    type: String,
+    default: ""
+  },
+
+  whatsappLink: {
+    type: String,
+    default: ""
   },
 
   // Event managers — scoped attendance access

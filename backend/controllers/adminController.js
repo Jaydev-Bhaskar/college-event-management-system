@@ -49,9 +49,18 @@ exports.approveRequest = async (req, res) => {
       category: request.category,
       date: request.date,
       time: request.time,
+      endDate: request.endDate,
+      endTime: request.endTime,
       location: request.location,
       maxParticipants: request.maxParticipants || null,
+      posterImage: request.posterImage,
       organizerId: request.userId,
+      registrationType: request.registrationType || "individual",
+      minTeamSize: request.minTeamSize || 1,
+      maxTeamSize: request.maxTeamSize || 1,
+      requiresApproval: request.requiresApproval || false,
+      isPaid: request.isPaid || false,
+      registrationFee: request.registrationFee || 0,
       status: "published" // Automatically publish so it shows up immediately
     });
     await newEvent.save();

@@ -10,8 +10,10 @@ exports.createEvent = async (req, res) => {
 
     const {
       title, description, category, date, time, endDate, endTime, location,
-      maxParticipants, posterImage, targetClass, subjectName,
-      sessionCoordinator, department, agenda, objectives, status
+      maxParticipants, posterImage, certificateTemplate, targetClass, subjectName,
+      sessionCoordinator, department, agenda, objectives, status,
+      organizerContact, whatsappLink, registrationType, minTeamSize, maxTeamSize, requiresApproval,
+      isPaid, registrationFee
     } = req.body;
 
     const event = new Event({
@@ -24,6 +26,7 @@ exports.createEvent = async (req, res) => {
       endTime,
       location,
       maxParticipants,
+      certificateTemplate,
       organizerId: req.user._id,
       posterImage,
       status: status || "draft",
@@ -32,7 +35,15 @@ exports.createEvent = async (req, res) => {
       sessionCoordinator: sessionCoordinator || req.user.name,
       department: department || req.user.department,
       agenda,
-      objectives
+      objectives,
+      organizerContact,
+      whatsappLink,
+      registrationType: registrationType || "individual",
+      minTeamSize: minTeamSize || 1,
+      maxTeamSize: maxTeamSize || 1,
+      requiresApproval: requiresApproval === true || requiresApproval === "true",
+      isPaid: isPaid === true || isPaid === "true",
+      registrationFee: registrationFee || 0
     });
 
     await event.save();
@@ -51,12 +62,8 @@ exports.createEvent = async (req, res) => {
 // Get all events (public — only published)
 exports.getEvents = async (req, res) => {
   try {
-    const filter = {};
-
-    // Public view shows only published events
-    if (!req.headers.authorization) {
-      filter.status = "published";
-    }
+    // Public view should ONLY show published events
+    const filter = { status: "published" };
 
     const events = await Event.aggregate([
       { $match: filter },
@@ -130,7 +137,9 @@ exports.updateEvent = async (req, res) => {
       "subjectName", "sessionCoordinator", "department", "agenda", "objectives", "reportImages",
       "activitySummary", "outcomes", "studentParticipationCount", "keyHighlights",
       "challenges", "conclusion", "futureScope", "selectedCOs", "selectedPOs", "selectedPSOs", 
-      "hodName", "actionTaken", "programmeCoordinator"
+      "hodName", "actionTaken", "programmeCoordinator", "certificateTemplate",
+      "organizerContact", "whatsappLink", "registrationType", "minTeamSize", "maxTeamSize", "requiresApproval",
+      "isPaid", "registrationFee"
     ];
 
     allowedFields.forEach(field => {

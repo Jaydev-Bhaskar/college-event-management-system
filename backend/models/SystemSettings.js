@@ -28,6 +28,21 @@ const systemSettingsSchema = new mongoose.Schema({
     default: ""
   },
 
+  globalWhatsappLink: {
+    type: String,
+    default: ""
+  },
+
+  paymentQRCode: {
+    type: String,
+    default: ""
+  },
+
+  upiId: {
+    type: String,
+    default: ""
+  },
+
   updatedBy: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "User"
