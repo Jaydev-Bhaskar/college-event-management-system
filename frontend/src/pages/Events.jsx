@@ -106,7 +106,7 @@ export default function Events() {
           ))}
         </div>
 
-        {/* Events Grid */}
+        {/* Events Grid grouped by Department */}
         {loading ? (
           <div className="spinner-overlay"><div className="spinner" /></div>
         ) : filtered.length === 0 ? (
@@ -117,70 +117,87 @@ export default function Events() {
           </div>
         ) : (
           <>
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
-              gap: '1.25rem',
-              marginBottom: '2rem'
-            }}>
-              {filtered.map((event) => {
-                const catStyle = getCategoryColor(event.category);
-                return (
-                  <div className="event-card" key={event._id}>
-                    {/* Image area */}
-                    <div className="event-card-image" style={{
-                      background: event.posterImage
-                        ? `url(${event.posterImage}) center/cover`
-                        : 'linear-gradient(135deg, #0F766E, #115E59)'
-                    }}>
-                      {event.category && (
-                        <span className="event-category-badge" style={{
-                          background: catStyle.bg, color: catStyle.color, border: 'none'
+            {Object.entries(
+              filtered.reduce((acc, event) => {
+                const dept = event.department || 'General';
+                if (!acc[dept]) acc[dept] = [];
+                acc[dept].push(event);
+                return acc;
+              }, {})
+            ).map(([dept, deptEvents]) => (
+              <div key={dept} style={{ marginBottom: '2.5rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', marginBottom: '1.25rem' }}>
+                  <h2 style={{ fontSize: '1.4rem', fontWeight: 700, color: 'var(--text-primary)' }}>{dept}</h2>
+                  <div style={{ height: 1, background: 'var(--border)', flex: 1 }} />
+                  <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 500 }}>
+                    {deptEvents.length} {deptEvents.length === 1 ? 'Event' : 'Events'}
+                  </span>
+                </div>
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
+                  gap: '1.25rem'
+                }}>
+                  {deptEvents.map((event) => {
+                    const catStyle = getCategoryColor(event.category);
+                    return (
+                      <div className="event-card" key={event._id}>
+                        {/* Image area */}
+                        <div className="event-card-image" style={{
+                          background: event.posterImage
+                            ? `url(${event.posterImage}) center/cover`
+                            : 'linear-gradient(135deg, #0F766E, #115E59)'
                         }}>
-                          {event.category === 'Technical' ? 'TECH' :
-                           event.category === 'Cultural' ? 'ARTS' :
-                           event.category === 'Sports' ? 'SPORTS' :
-                           event.category?.toUpperCase()}
-                        </span>
-                      )}
-                      {!event.posterImage && (
-                        <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: '3rem', fontWeight: 800 }}>
-                          {event.category?.toUpperCase() || 'EVENT'}
-                        </span>
-                      )}
-                    </div>
+                          {event.category && (
+                            <span className="event-category-badge" style={{
+                              background: catStyle.bg, color: catStyle.color, border: 'none'
+                            }}>
+                              {event.category === 'Technical' ? 'TECH' :
+                               event.category === 'Cultural' ? 'ARTS' :
+                               event.category === 'Sports' ? 'SPORTS' :
+                               event.category?.toUpperCase()}
+                            </span>
+                          )}
+                          {!event.posterImage && (
+                            <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: '3rem', fontWeight: 800 }}>
+                              {event.category?.toUpperCase() || 'EVENT'}
+                            </span>
+                          )}
+                        </div>
 
-                    <div className="event-card-body">
-                      <h3 className="event-card-title">{event.title}</h3>
-                      <div className="event-card-meta">
-                        <span className="event-card-meta-item">
-                          <CalendarDays size={13} /> {formatTime(event.date, event.time)}
-                        </span>
-                        {event.location && (
-                          <span className="event-card-meta-item">
-                            <MapPin size={13} /> {event.location}
-                          </span>
-                        )}
+                        <div className="event-card-body">
+                          <h3 className="event-card-title">{event.title}</h3>
+                          <div className="event-card-meta">
+                            <span className="event-card-meta-item">
+                              <CalendarDays size={13} /> {formatTime(event.date, event.time)}
+                            </span>
+                            {event.location && (
+                              <span className="event-card-meta-item">
+                                <MapPin size={13} /> {event.location}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="event-card-footer">
+                          <Link
+                            to={`/events/${event._id}`}
+                            className="btn btn-ghost btn-sm"
+                            style={{ width: '100%', justifyContent: 'center' }}
+                          >
+                            View Details
+                          </Link>
+                        </div>
                       </div>
-                    </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
 
-                    <div className="event-card-footer">
-                      <Link
-                        to={`/events/${event._id}`}
-                        className="btn btn-ghost btn-sm"
-                        style={{ width: '100%', justifyContent: 'center' }}
-                      >
-                        View Details
-                      </Link>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Load More */}
-            {filtered.length > 8 && (
-              <div style={{ textAlign: 'center' }}>
+            {/* Load More Button - only if many results */}
+            {filtered.length > 20 && (
+              <div style={{ textAlign: 'center', marginTop: '1rem' }}>
                 <button className="btn btn-ghost">Load More Events ↓</button>
               </div>
             )}

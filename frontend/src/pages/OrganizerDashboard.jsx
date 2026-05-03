@@ -7,7 +7,7 @@ import Sidebar from '../components/Sidebar';
 import Modal from '../components/Modal';
 import {
   LayoutDashboard, CalendarPlus, Users, BarChart3,
-  Calendar, Eye, CheckCircle2, QrCode, Search,
+  Calendar, Eye, CheckCircle2, QrCode, Search, Trash2,
   Upload, MapPin, Clock, PlusCircle, UserCircle, FileText, UserCheck, Edit3,
   CalendarDays, QrCode as QrIcon, Download, MessageSquare
 } from 'lucide-react';
@@ -31,12 +31,14 @@ export default function OrganizerDashboard() {
   const [editLoading, setEditLoading] = useState(false);
   const [editForm, setEditForm] = useState({
     title: '', description: '', location: '', category: '', date: '', time: '', endDate: '', endTime: '', maxParticipants: '', posterImage: '', certificateTemplate: '',
-    registrationType: 'individual', minTeamSize: 1, maxTeamSize: 1, requiresApproval: false, isPaid: false, registrationFee: 0
+    registrationType: 'individual', minTeamSize: 1, maxTeamSize: 1, requiresApproval: false, isPaid: false, registrationFee: 0,
+    organizerContact: '', whatsappLink: '', paymentQR: ''
   });
 
   const [form, setForm] = useState({
     title: '', description: '', category: '', date: '', time: '', endDate: '', endTime: '', location: '', maxParticipants: '', posterImage: '', certificateTemplate: '',
-    registrationType: 'individual', minTeamSize: 1, maxTeamSize: 1, requiresApproval: false, isPaid: false, registrationFee: 0
+    registrationType: 'individual', minTeamSize: 1, maxTeamSize: 1, requiresApproval: false, isPaid: false, registrationFee: 0,
+    organizerContact: '', whatsappLink: '', paymentQR: ''
   });
 
   const [registrations, setRegistrations] = useState([]);
@@ -140,15 +142,16 @@ export default function OrganizerDashboard() {
     }
     setCreateLoading(true);
     try {
-      await API.post('/organizer/request', {
+      await API.post('/events', {
         ...form,
+        status: 'published',
         maxParticipants: form.maxParticipants ? Number(form.maxParticipants) : undefined,
       });
-      addToast('Event proposal submitted successfully! Pending admin approval.', 'success');
+      addToast('Event published successfully!', 'success');
       setForm({ 
         title: '', description: '', category: '', date: '', time: '', endDate: '', endTime: '', location: '', maxParticipants: '',
         registrationType: 'individual', minTeamSize: 1, maxTeamSize: 1, requiresApproval: false, isPaid: false, registrationFee: 0,
-        posterImage: '', certificateTemplate: ''
+        posterImage: '', certificateTemplate: '', organizerContact: '', whatsappLink: '', paymentQR: ''
       });
       navigate('/organizer/events');
     } catch (err) {
@@ -192,6 +195,23 @@ export default function OrganizerDashboard() {
     } catch (err) {
       addToast(err.response?.data?.message || 'Failed to update event', 'error');
     } finally { setEditLoading(false); }
+  };
+
+  const handleDeleteEvent = async (eventId) => {
+    if (!window.confirm("CRITICAL ACTION: Are you sure you want to permanently delete this event? \n\nThis will remove all registrations, attendance records, and participant data. This action CANNOT be undone.")) {
+      return;
+    }
+    
+    setLoading(true);
+    try {
+      await API.delete(`/events/${eventId}`);
+      addToast('Event and all associated data deleted', 'success');
+      fetchEvents();
+    } catch (err) {
+      addToast(err.response?.data?.message || 'Failed to delete event', 'error');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const updateStatus = async (registrationId, status) => {
@@ -315,69 +335,118 @@ export default function OrganizerDashboard() {
         <input className="form-input" placeholder="e.g. Main Auditorium" value={formData.location || ''} onChange={(e) => setFormData({ ...formData, location: e.target.value })} />
       </div>
 
-      <h3 style={{ fontWeight: 700, marginBottom: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.95rem', marginTop: '1.5rem' }}>
-        <CheckCircle2 size={16} style={{ color: 'var(--primary)' }} /> Registration Configuration
+      <h3 style={{ fontWeight: 700, marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '1rem', marginTop: '1.5rem', color: 'var(--primary)' }}>
+        <CheckCircle2 size={18} /> Registration Configuration
       </h3>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1rem' }}>
-        <div className="form-group" style={{ marginBottom: 0 }}>
-          <label className="form-label">Registration Type</label>
-          <select className="form-input" value={formData.registrationType || 'individual'} onChange={(e) => setFormData({ ...formData, registrationType: e.target.value })}>
-            <option value="individual">Individual Participation</option>
-            <option value="team">Team Participation</option>
-          </select>
+      
+      <div className="glass-card-static" style={{ padding: '1.5rem', background: 'var(--bg-body)', marginBottom: '1.5rem' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }}>
+          <div className="form-group" style={{ marginBottom: 0 }}>
+            <label className="form-label">Registration Type</label>
+            <select className="form-input" value={formData.registrationType || 'individual'} onChange={(e) => setFormData({ ...formData, registrationType: e.target.value })}>
+              <option value="individual">Individual Participation</option>
+              <option value="team">Team Participation</option>
+            </select>
+          </div>
+          
+          <div className="form-group" style={{ marginBottom: 0, display: 'flex', alignItems: 'flex-start', paddingTop: '1.75rem' }}>
+            <label className="checkbox-container" style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem', cursor: 'pointer', userSelect: 'none' }}>
+              <input 
+                type="checkbox" 
+                checked={formData.requiresApproval} 
+                onChange={(e) => setFormData({ ...formData, requiresApproval: e.target.checked })}
+                style={{ width: 18, height: 18, cursor: 'pointer', marginTop: '2px' }}
+              />
+              <span style={{ fontWeight: 600, fontSize: '0.85rem', lineHeight: 1.4 }}>Requires Admin/Organizer Approval</span>
+            </label>
+          </div>
         </div>
-        <div className="form-group" style={{ marginBottom: 0, display: 'flex', alignItems: 'center', gap: '0.5rem', paddingTop: '1.5rem' }}>
-          <input 
-            type="checkbox" 
-            id="requiresApproval"
-            checked={formData.requiresApproval} 
-            onChange={(e) => setFormData({ ...formData, requiresApproval: e.target.checked })} 
-          />
-          <label htmlFor="requiresApproval" className="form-label" style={{ marginBottom: 0 }}>Requires Approval</label>
-        </div>
-      </div>
 
         {formData.registrationType === 'team' && (
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '0.5rem' }}>
-          <div className="form-group">
-            <label className="form-label">Min Team Size</label>
-            <input type="number" className="form-input" value={formData.minTeamSize || 1} onChange={(e) => setFormData({ ...formData, minTeamSize: e.target.value })} />
-          </div>
-          <div className="form-group">
-            <label className="form-label">Max Team Size</label>
-            <input type="number" className="form-input" value={formData.maxTeamSize || 1} onChange={(e) => setFormData({ ...formData, maxTeamSize: e.target.value })} />
-          </div>
-        </div>
-      )}
-
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '1rem', marginBottom: '1rem' }}>
-        <div className="form-group" style={{ marginBottom: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <input 
-            type="checkbox" 
-            id="isPaid"
-            checked={formData.isPaid} 
-            onChange={(e) => setFormData({ ...formData, isPaid: e.target.checked })} 
-          />
-          <label htmlFor="isPaid" className="form-label" style={{ marginBottom: 0 }}>Paid Event</label>
-        </div>
-        {formData.isPaid && (
-          <div className="form-group" style={{ marginBottom: 0 }}>
-            <label className="form-label">Registration Fee (₹)</label>
-            <input type="number" className="form-input" value={formData.registrationFee || 0} onChange={(e) => setFormData({ ...formData, registrationFee: e.target.value })} />
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem', padding: '1rem', background: 'rgba(var(--primary-rgb), 0.05)', borderRadius: 'var(--radius-md)', border: '1px solid var(--primary-light)' }}>
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <label className="form-label">Min Team Size</label>
+              <input type="number" className="form-input" value={formData.minTeamSize || 1} onChange={(e) => setFormData({ ...formData, minTeamSize: e.target.value })} />
+            </div>
+            <div className="form-group" style={{ marginBottom: 0 }}>
+              <label className="form-label">Max Team Size</label>
+              <input type="number" className="form-input" value={formData.maxTeamSize || 1} onChange={(e) => setFormData({ ...formData, maxTeamSize: e.target.value })} />
+            </div>
           </div>
         )}
-      </div>
 
-      <h3 style={{ fontWeight: 700, marginBottom: '0.85rem', display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.95rem', marginTop: '0.5rem' }}>
-        <Users size={16} style={{ color: 'var(--success)' }} /> Communications
-      </h3>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '1rem' }}>
-        <div className="form-group" style={{ marginBottom: 0 }}>
-          <label className="form-label">Organizer Contact Info</label>
-          <input className="form-input" placeholder="Phone or Email" value={formData.organizerContact || ''} onChange={(e) => setFormData({ ...formData, organizerContact: e.target.value })} />
+        <div style={{ padding: '1.25rem', background: 'white', borderRadius: 'var(--radius-md)', border: '1px solid var(--border)' }}>
+          <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1.5rem', flexWrap: 'wrap' }}>
+            <label className="checkbox-container" style={{ display: 'flex', alignItems: 'flex-start', gap: '0.75rem', cursor: 'pointer', userSelect: 'none' }}>
+              <input 
+                type="checkbox" 
+                checked={formData.isPaid} 
+                onChange={(e) => setFormData({ ...formData, isPaid: e.target.checked })}
+                style={{ width: 18, height: 18, cursor: 'pointer', marginTop: '2px' }}
+              />
+              <span style={{ fontWeight: 600, fontSize: '0.85rem', lineHeight: 1.4 }}>Paid Event</span>
+            </label>
+
+            {formData.isPaid && (
+              <div style={{ flex: 1, minWidth: '200px', display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                <div className="form-group" style={{ marginBottom: 0, flex: 1 }}>
+                  <label className="form-label" style={{ fontSize: '0.75rem' }}>Registration Fee (₹)</label>
+                  <input type="number" className="form-input" placeholder="0" value={formData.registrationFee || ''} onChange={(e) => setFormData({ ...formData, registrationFee: e.target.value })} />
+                </div>
+                
+                <label style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.25rem', padding: '0.5rem', border: '1px dashed var(--border)', borderRadius: 'var(--radius-sm)', minWidth: '100px', background: 'var(--bg-body)' }}>
+                  <input type="file" accept="image/*" style={{ display: 'none' }} onChange={(e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                      const reader = new FileReader();
+                      reader.onloadend = () => setFormData({ ...formData, paymentQR: reader.result });
+                      reader.readAsDataURL(file);
+                    }
+                  }} />
+                  <QrCode size={16} color="var(--primary)" />
+                  <span style={{ fontSize: '0.65rem', fontWeight: 600 }}>{formData.paymentQR ? 'QR Uploaded' : 'Upload QR'}</span>
+                </label>
+              </div>
+            )}
+          </div>
         </div>
       </div>
-      <div style={{ marginBottom: '1rem' }}></div>
+
+      <h3 style={{ fontWeight: 700, marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '1rem', marginTop: '1.5rem', color: 'var(--success)' }}>
+        <Users size={18} /> Communications & Contact
+      </h3>
+      
+      <div className="glass-card-static" style={{ padding: '1.5rem', background: 'var(--bg-body)' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+          <div className="form-group" style={{ marginBottom: 0 }}>
+            <label className="form-label">Organizer Contact Info</label>
+            <div style={{ position: 'relative' }}>
+              <UserCircle size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+              <input 
+                className="form-input" 
+                style={{ paddingLeft: '2.5rem' }}
+                placeholder="Phone or Email" 
+                value={formData.organizerContact || ''} 
+                onChange={(e) => setFormData({ ...formData, organizerContact: e.target.value })} 
+              />
+            </div>
+          </div>
+          <div className="form-group" style={{ marginBottom: 0 }}>
+            <label className="form-label">WhatsApp Group Link (Optional)</label>
+            <div style={{ position: 'relative' }}>
+              <MessageSquare size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#25D366' }} />
+              <input 
+                className="form-input" 
+                style={{ paddingLeft: '2.5rem' }}
+                placeholder="https://chat.whatsapp.com/..." 
+                value={formData.whatsappLink || ''} 
+                onChange={(e) => setFormData({ ...formData, whatsappLink: e.target.value })} 
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style={{ marginBottom: '2rem' }}></div>
     </>
   );
 
@@ -388,7 +457,7 @@ export default function OrganizerDashboard() {
           <div>
             <h1 style={{ fontSize: '1.75rem', fontWeight: 800, marginBottom: '0.2rem' }}>Create New Event</h1>
             <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
-              Provide all necessary information to help students discover your event.
+              Provide all necessary information to help participants discover your event.
             </p>
           </div>
           <div className="glass-card-static" style={{ padding: '2rem' }}>
@@ -413,7 +482,7 @@ export default function OrganizerDashboard() {
           <div>
             <h1 style={{ fontSize: '1.75rem', fontWeight: 800, marginBottom: '0.2rem' }}>Participants Directory</h1>
             <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
-              View and manage registered students for your events.
+              View and manage registered participants for your events.
             </p>
           </div>
           
@@ -450,7 +519,7 @@ export default function OrganizerDashboard() {
             <div className="glass-card-static empty-state" style={{ padding: '3rem 2rem' }}>
               <Users size={48} />
               <h3>No Participants Yet</h3>
-              <p>No students have registered for {selectedEvent.title} yet.</p>
+              <p>No one has registered for {selectedEvent.title} yet.</p>
             </div>
           ) : (
             <div className="glass-card-static" style={{ padding: '1.5rem' }}>
@@ -558,7 +627,7 @@ export default function OrganizerDashboard() {
           <div>
             <h1 style={{ fontSize: '1.75rem', fontWeight: 800, marginBottom: '0.2rem' }}>My Registrations</h1>
             <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
-              Events you are participating in as a student/faculty.
+              Events you are participating in.
             </p>
           </div>
 
@@ -781,10 +850,20 @@ export default function OrganizerDashboard() {
                                   maxTeamSize: evt.maxTeamSize || 1,
                                   requiresApproval: evt.requiresApproval || false,
                                   isPaid: evt.isPaid || false,
-                                  registrationFee: evt.registrationFee || 0
+                                  registrationFee: evt.registrationFee || 0,
+                                  organizerContact: evt.organizerContact || '',
+                                  whatsappLink: evt.whatsappLink || '',
+                                  paymentQR: evt.paymentQR || ''
                                 });
                               }}>
                               <Edit3 size={13} style={{ marginRight: 2 }} /> Edit
+                            </a>
+                            <a href="#" style={{ fontSize: '0.8rem', fontWeight: 500, color: 'var(--danger)', display: 'flex', alignItems: 'center' }}
+                              onClick={(e) => { 
+                                e.preventDefault(); 
+                                handleDeleteEvent(evt._id);
+                              }}>
+                               <Trash2 size={13} style={{ marginRight: 2 }} /> Delete
                             </a>
                           </div>
                         </td>

@@ -83,6 +83,10 @@ const organizerRequestSchema = new mongoose.Schema({
     type: String,
     enum: ["pending", "approved", "rejected"],
     default: "pending"
+  },
+
+  department: {
+    type: String
   }
 
 }, { timestamps: true });

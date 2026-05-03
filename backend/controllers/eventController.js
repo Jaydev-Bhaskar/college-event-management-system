@@ -2,6 +2,7 @@ const Event = require("../models/Event");
 const Registration = require("../models/Registration");
 const SystemSettings = require("../models/SystemSettings");
 const User = require("../models/User");
+const { uploadToCloudinary } = require("../utils/cloudinaryHelper");
 
 
 // Create event (Organizer or Admin)
@@ -12,9 +13,14 @@ exports.createEvent = async (req, res) => {
       title, description, category, date, time, endDate, endTime, location,
       maxParticipants, posterImage, certificateTemplate, targetClass, subjectName,
       sessionCoordinator, department, agenda, objectives, status,
-      organizerContact, whatsappLink, registrationType, minTeamSize, maxTeamSize, requiresApproval,
+      organizerContact, whatsappLink, paymentQR, registrationType, minTeamSize, maxTeamSize, requiresApproval,
       isPaid, registrationFee
     } = req.body;
+
+    // Upload images to Cloudinary
+    const posterUrl = await uploadToCloudinary(posterImage, 'posters');
+    const certificateUrl = await uploadToCloudinary(certificateTemplate, 'templates');
+    const qrUrl = await uploadToCloudinary(paymentQR, 'payment_qrs');
 
     const event = new Event({
       title,
@@ -26,9 +32,9 @@ exports.createEvent = async (req, res) => {
       endTime,
       location,
       maxParticipants,
-      certificateTemplate,
+      certificateTemplate: certificateUrl,
       organizerId: req.user._id,
-      posterImage,
+      posterImage: posterUrl,
       status: status || "draft",
       targetClass,
       subjectName,
@@ -38,6 +44,7 @@ exports.createEvent = async (req, res) => {
       objectives,
       organizerContact,
       whatsappLink,
+      paymentQR: qrUrl,
       registrationType: registrationType || "individual",
       minTeamSize: minTeamSize || 1,
       maxTeamSize: maxTeamSize || 1,
@@ -54,6 +61,7 @@ exports.createEvent = async (req, res) => {
     });
 
   } catch (error) {
+    console.error("Create Event Error:", error);
     res.status(500).json({ error: error.message });
   }
 };
@@ -138,21 +146,33 @@ exports.updateEvent = async (req, res) => {
       "activitySummary", "outcomes", "studentParticipationCount", "keyHighlights",
       "challenges", "conclusion", "futureScope", "selectedCOs", "selectedPOs", "selectedPSOs", 
       "hodName", "actionTaken", "programmeCoordinator", "certificateTemplate",
-      "organizerContact", "whatsappLink", "registrationType", "minTeamSize", "maxTeamSize", "requiresApproval",
+      "organizerContact", "whatsappLink", "paymentQR", "registrationType", "minTeamSize", "maxTeamSize", "requiresApproval",
       "isPaid", "registrationFee"
     ];
 
-    allowedFields.forEach(field => {
+    for (const field of allowedFields) {
       if (req.body[field] !== undefined) {
-        event[field] = req.body[field];
+        if (field === 'reportImages' && Array.isArray(req.body[field])) {
+          // Handle array of images
+          const uploadedImages = await Promise.all(
+            req.body[field].map(img => uploadToCloudinary(img, 'reports'))
+          );
+          event[field] = uploadedImages;
+        } else if (['posterImage', 'certificateTemplate', 'paymentQR'].includes(field)) {
+          // Handle single image
+          event[field] = await uploadToCloudinary(req.body[field], field.replace('Image', 's').replace('Template', 's'));
+        } else {
+          event[field] = req.body[field];
+        }
       }
-    });
+    }
 
     await event.save();
 
     res.json({ message: "Event updated", event });
 
   } catch (error) {
+    console.error("Update Event Error:", error);
     res.status(500).json({ error: error.message });
   }
 };
@@ -168,9 +188,23 @@ exports.deleteEvent = async (req, res) => {
       return res.status(403).json({ message: "Not authorized to delete this event" });
     }
 
-    await Event.findByIdAndDelete(req.params.id);
-    res.json({ message: "Event deleted successfully" });
+    const eventId = event._id;
+
+    // 1. Delete all registrations for this event
+    await Registration.deleteMany({ eventId });
+
+    // 2. Remove event from all users' managedEvents list
+    await User.updateMany(
+      { "privileges.managedEvents": eventId },
+      { $pull: { "privileges.managedEvents": eventId } }
+    );
+
+    // 3. Finally delete the event itself
+    await Event.findByIdAndDelete(eventId);
+
+    res.json({ message: "Event and all associated data deleted successfully" });
   } catch (error) {
+    console.error("Delete Event Error:", error);
     res.status(500).json({ error: error.message });
   }
 };

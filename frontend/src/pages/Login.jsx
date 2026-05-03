@@ -29,11 +29,13 @@ export default function Login() {
       if (from) {
          navigate(from.pathname || from, { replace: true });
       } else {
-         switch (user.role) {
-           case 'admin': navigate('/admin'); break;
-           case 'organizer': navigate('/organizer'); break;
-           default: navigate('/dashboard');
-         }
+          switch (user.role) {
+            case 'admin': navigate('/admin'); break;
+            case 'organizer': navigate('/organizer'); break;
+            default: 
+              if (user.baseRole === 'teacher') navigate('/organizer');
+              else navigate('/dashboard');
+          }
       }
     } catch (err) {
       addToast(err.response?.data?.message || 'Invalid credentials', 'error');

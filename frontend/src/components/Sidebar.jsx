@@ -15,7 +15,9 @@ export default function Sidebar({ links }) {
         <div>
           <div style={{ fontWeight: 700, fontSize: '0.95rem', lineHeight: 1.2 }}>EventHub</div>
           <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>
-            {user?.role === 'admin' ? 'COLLEGE ADMIN' : user?.role === 'organizer' ? 'Organizer Portal' : 'Student Portal'}
+            {user?.role === 'admin' ? 'HOD Portal' : 
+             user?.role === 'teacher' ? 'Faculty Portal' : 
+             user?.role === 'organizer' ? 'Organizer Portal' : 'Student Portal'}
           </div>
         </div>
       </div>

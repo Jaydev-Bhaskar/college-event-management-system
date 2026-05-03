@@ -3,7 +3,7 @@ const POBank = require("../models/POBank");
 // Get PO bank for a department
 exports.getPOBank = async (req, res) => {
   try {
-    const department = req.query.department || req.user.department;
+    const department = req.user.department || req.query.department;
 
     if (!department) {
       return res.status(400).json({ message: "Department is required" });
@@ -40,7 +40,7 @@ exports.upsertPOBank = async (req, res) => {
   try {
     const { department, pos, psos } = req.body;
 
-    const dept = department || req.user.department;
+    const dept = req.user.department || department;
 
     if (!dept) {
       return res.status(400).json({ message: "Department is required" });
@@ -68,7 +68,7 @@ exports.upsertPOBank = async (req, res) => {
 exports.addPO = async (req, res) => {
   try {
     const { department, code, description, type } = req.body;
-    const dept = department || req.user.department;
+    const dept = req.user.department || department;
 
     let poBank = await POBank.findOne({ department: dept });
 
@@ -98,7 +98,7 @@ exports.addPO = async (req, res) => {
 exports.removePO = async (req, res) => {
   try {
     const { department, code, type } = req.body;
-    const dept = department || req.user.department;
+    const dept = req.user.department || department;
 
     const poBank = await POBank.findOne({ department: dept });
 

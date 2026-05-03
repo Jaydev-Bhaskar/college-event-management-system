@@ -2,8 +2,10 @@ import React, { useRef } from 'react';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
 import { Download, Award, ShieldCheck, MapPin, Calendar } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 const Certificate = ({ registration, event, onDownloadComplete }) => {
+  const { user } = useAuth();
   const certificateRef = useRef();
 
   const downloadCertificate = async () => {
@@ -81,8 +83,8 @@ const Certificate = ({ registration, event, onDownloadComplete }) => {
               This is to certify that
             </div>
             
-            <div style={{ fontSize: '42px', fontWeight: 800, color: '#1E293B', borderBottom: '2px solid #D4AF37', display: 'inline-block', padding: '0 40px', marginBottom: '30px' }}>
-              {registration.userId?.name || 'VALUED STUDENT'}
+            <div style={{ fontSize: '42px', fontWeight: 800, color: '#1E293B', borderBottom: '2px solid #D4AF37', display: 'inline-block', padding: '0 40px', marginBottom: '30px', textTransform: 'uppercase' }}>
+              {registration.userId?.name || (typeof registration.userId === 'string' ? user?.name : registration.userId) || user?.name || 'VALUED STUDENT'}
             </div>
 
             <div style={{ fontSize: '18px', color: '#64748B', maxWidth: '700px', lineHeight: 1.6, margin: '0 auto 40px auto' }}>

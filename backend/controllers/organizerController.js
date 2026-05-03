@@ -8,6 +8,7 @@ exports.createRequest = async (req, res) => {
 
     const request = new OrganizerRequest({
       userId: req.user.id,
+      department: req.user.department,
       title,
       description,
       category,

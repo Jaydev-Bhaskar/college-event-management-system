@@ -244,16 +244,16 @@ export default function EventDetails() {
                     </p>
                     
                     <div style={{ background: 'white', padding: '1rem', borderRadius: 'var(--radius-md)', textAlign: 'center', marginBottom: '1rem', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}>
-                      {globalSettings?.upiId && (
-                        <div style={{ marginBottom: '0.75rem' }}>
-                          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block' }}>UPI ID</span>
-                          <span style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)' }}>{globalSettings.upiId}</span>
+                      {(event.paymentQR || globalSettings?.paymentQRCode) && (
+                        <div>
+                          <img src={event.paymentQR || globalSettings.paymentQRCode} alt="Payment QR" style={{ width: 180, height: 180, objectFit: 'contain', display: 'block', margin: '0 auto' }} />
+                          <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.5rem', display: 'block' }}>Scan to pay ₹{event.registrationFee}</span>
                         </div>
                       )}
-                      {globalSettings?.paymentQRCode && (
-                        <div>
-                          <img src={globalSettings.paymentQRCode} alt="Payment QR" style={{ width: 160, height: 160, objectFit: 'contain', display: 'block', margin: '0 auto' }} />
-                          <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', marginTop: '0.5rem', display: 'block' }}>Scan to pay</span>
+                      {!event.paymentQR && !globalSettings?.paymentQRCode && globalSettings?.upiId && (
+                        <div style={{ padding: '0.5rem' }}>
+                          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', display: 'block' }}>UPI ID</span>
+                          <span style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)' }}>{globalSettings.upiId}</span>
                         </div>
                       )}
                     </div>
