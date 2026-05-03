@@ -57,7 +57,7 @@ export default function App() {
 
             {/* Organizer — all sub-paths render same dashboard */}
             <Route path="/organizer" element={
-              <ProtectedRoute roles={['organizer']}>
+              <ProtectedRoute roles={['organizer', 'teacher']}>
                 <OrganizerDashboard />
               </ProtectedRoute>
             } />
@@ -72,7 +72,7 @@ export default function App() {
               </ProtectedRoute>
             } />
             <Route path="/organizer/*" element={
-              <ProtectedRoute roles={['organizer']}>
+              <ProtectedRoute roles={['organizer', 'teacher']}>
                 <OrganizerDashboard />
               </ProtectedRoute>
             } />

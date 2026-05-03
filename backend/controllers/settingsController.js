@@ -1,8 +1,9 @@
 const SystemSettings = require("../models/SystemSettings");
+const { uploadToCloudinary } = require("../utils/cloudinaryHelper");
 
 // Get system settings for a department
 exports.getSettings = async (req, res) => {
-
+// ... existing code ...
   try {
     const department = req.query.department || (req.user ? req.user.department : null);
 
@@ -44,6 +45,9 @@ exports.updateSettings = async (req, res) => {
       return res.status(400).json({ message: "Department is required" });
     }
 
+    // Upload QR code to Cloudinary if it's a base64 string
+    const qrUrl = await uploadToCloudinary(paymentQRCode, 'system');
+
     const settings = await SystemSettings.findOneAndUpdate(
       { department: dept },
       {
@@ -53,7 +57,7 @@ exports.updateSettings = async (req, res) => {
         categories: categories || undefined,
         institutionName: institutionName || "",
         globalWhatsappLink: globalWhatsappLink || "",
-        paymentQRCode: paymentQRCode || "",
+        paymentQRCode: qrUrl || "",
         upiId: upiId || "",
         updatedBy: req.user._id
       },
@@ -63,6 +67,7 @@ exports.updateSettings = async (req, res) => {
     res.json({ message: "Settings updated successfully", settings });
 
   } catch (error) {
+    console.error("Update Settings Error:", error);
     res.status(500).json({ error: error.message });
   }
 };

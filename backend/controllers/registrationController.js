@@ -1,6 +1,7 @@
 const Registration = require("../models/Registration");
 const Event = require("../models/Event");
 const QRCode = require("qrcode");
+const { uploadToCloudinary } = require("../utils/cloudinaryHelper");
 
 // Register for an event (any authenticated user, including organizers for their own events)
 exports.registerForEvent = async (req, res) => {
@@ -38,13 +39,16 @@ exports.registerForEvent = async (req, res) => {
       return res.status(400).json({ message: "Payment proof is required for this event" });
     }
 
+    // Upload payment proof to Cloudinary
+    const screenshotUrl = await uploadToCloudinary(paymentScreenshot, 'payments');
+
     const registration = new Registration({
       userId: req.user._id,
       eventId,
       teamName: teamName || "",
       teamMembers: teamMembers || [],
       isTeamLeader: !!teamName,
-      paymentScreenshot,
+      paymentScreenshot: screenshotUrl,
       transactionId,
       registrationStatus: (event.requiresApproval || event.isPaid) ? "pending" : "confirmed"
     });
@@ -70,6 +74,7 @@ exports.registerForEvent = async (req, res) => {
     if (error.code === 11000) {
       return res.status(400).json({ message: "You already registered for this event" });
     }
+    console.error("Registration Error:", error);
     res.status(500).json({ error: error.message });
   }
 };
@@ -82,7 +87,7 @@ exports.getMyRegistrations = async (req, res) => {
         { userId: req.user._id },
         { "teamMembers": { $elemMatch: { userId: req.user._id, status: "accepted" } } }
       ]
-    }).populate("eventId");
+    }).populate("eventId").populate("userId", "name email studentId department");
 
     res.json(registrations);
 

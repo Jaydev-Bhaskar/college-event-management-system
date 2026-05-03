@@ -107,6 +107,10 @@ const eventSchema = new mongoose.Schema({
     default: ""
   },
 
+  paymentQR: {
+    type: String
+  },
+
   // Event managers — scoped attendance access
   eventManagers: [{
     type: mongoose.Schema.Types.ObjectId,

@@ -21,7 +21,9 @@ export default function Navbar() {
     switch (user.role) {
       case 'admin': return '/admin';
       case 'organizer': return '/organizer';
-      default: return '/dashboard';
+      default: 
+        if (user.baseRole === 'teacher') return '/organizer';
+        return '/dashboard';
     }
   };
 

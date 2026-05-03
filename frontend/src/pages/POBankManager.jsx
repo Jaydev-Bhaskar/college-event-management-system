@@ -111,6 +111,7 @@ export default function POBankManager() {
               <option value="Information Technology">Information Technology</option>
               <option value="Instrumentation and Control Engineering">Instrumentation and Control Engineering</option>
               <option value="Artificial Intelligence and Data Science">Artificial Intelligence and Data Science</option>
+              <option value="AIDS">AIDS</option>
               <option value="Electrical Engineering">Electrical Engineering</option>
               <option value="MBA">MBA</option>
               <option value="Civil Engineering">Civil Engineering</option>

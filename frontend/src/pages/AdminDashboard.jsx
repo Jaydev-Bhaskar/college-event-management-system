@@ -23,6 +23,7 @@ export default function AdminDashboard() {
   const [reportFilterCategory, setReportFilterCategory] = useState('');
   const [settings, setSettings] = useState(null);
   const [settingsLoading, setSettingsLoading] = useState(false);
+  const [userFilterRole, setUserFilterRole] = useState('all');
 
   const sidebarLinks = [
     {
@@ -50,7 +51,7 @@ export default function AdminDashboard() {
     try {
       const [reqRes, evtRes, usrRes, settingsRes] = await Promise.all([
         API.get('/admin/organizer-requests'),
-        API.get('/events'),
+        API.get('/admin/events'),
         API.get('/admin/users'),
         API.get('/settings')
       ]);
@@ -98,7 +99,7 @@ export default function AdminDashboard() {
   };
 
   const handleDeleteEvent = async (eventId) => {
-    if (!window.confirm("Are you sure you want to permanently delete this event? This cannot be undone.")) return;
+    if (!window.confirm("CRITICAL ACTION: Are you sure you want to permanently delete this event? \n\nThis will remove all registrations, attendance records, and participant data for this event. This action CANNOT be undone.")) return;
     setActionLoading(eventId);
     try {
       await API.delete(`/events/${eventId}`);
@@ -145,7 +146,7 @@ export default function AdminDashboard() {
           <div>
             <h1 style={{ fontSize: '1.75rem', fontWeight: 800, marginBottom: '0.2rem' }}>Organizer Requests</h1>
             <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
-              Review and manage student applications for event organizer privileges.
+              Review and manage student applications for event organizer privileges in {user.department || 'your department'}.
             </p>
           </div>
           <div className="glass-card-static">
@@ -237,9 +238,9 @@ export default function AdminDashboard() {
       return (
         <>
           <div>
-            <h1 style={{ fontSize: '1.75rem', fontWeight: 800, marginBottom: '0.2rem' }}>All Events</h1>
+            <h1 style={{ fontSize: '1.75rem', fontWeight: 800, marginBottom: '0.2rem' }}>{user.department || 'Department'} Events</h1>
             <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
-              Manage all active and past events on the platform.
+              Manage all active and past events for the {user.department || 'department'}.
             </p>
           </div>
           {events.length === 0 ? (
@@ -296,9 +297,9 @@ export default function AdminDashboard() {
       return (
         <>
           <div>
-            <h1 style={{ fontSize: '1.75rem', fontWeight: 800, marginBottom: '0.2rem' }}>Student Directory</h1>
+            <h1 style={{ fontSize: '1.75rem', fontWeight: 800, marginBottom: '0.2rem' }}>Directory</h1>
             <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
-              View and manage registered students within {user.department || 'the system'}.
+              View and manage users within {user.department || 'the system'}.
             </p>
           </div>
           <div className="glass-card-static" style={{ overflow: 'auto' }}>
@@ -307,12 +308,42 @@ export default function AdminDashboard() {
                 <tr>
                   <th>Student</th>
                   <th>Student ID</th>
-                  <th>Role</th>
+                  <th>
+                    <select 
+                      value={userFilterRole} 
+                      onChange={(e) => setUserFilterRole(e.target.value)}
+                      style={{ 
+                        background: 'transparent', 
+                        border: 'none', 
+                        color: 'inherit', 
+                        fontWeight: 'inherit', 
+                        fontSize: 'inherit', 
+                        fontFamily: 'inherit',
+                        cursor: 'pointer',
+                        padding: 0,
+                        outline: 'none',
+                        textTransform: 'uppercase'
+                      }}
+                    >
+                      <option value="all">ROLE (ALL)</option>
+                      <option value="student">STUDENT</option>
+                      <option value="teacher">TEACHER</option>
+                      <option value="organizer">ORGANIZER</option>
+                      <option value="admin">ADMIN</option>
+                    </select>
+                  </th>
                   <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
-                {students.map((student) => (
+                {students
+                  .filter(s => {
+                    if (userFilterRole === 'all') return true;
+                    if (userFilterRole === 'organizer') return s.role === 'organizer' || s.privileges?.isOrganizer;
+                    if (userFilterRole === 'student') return s.role === 'student' || (s.role === 'organizer' && s.baseRole === 'student');
+                    return s.role === userFilterRole;
+                  })
+                  .map((student) => (
                   <tr key={student._id}>
                     <td>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.65rem' }}>
@@ -325,10 +356,12 @@ export default function AdminDashboard() {
                         </div>
                       </div>
                     </td>
-                    <td>{student._id.slice(-8)}</td>
+                    <td>{student.studentId || student._id.slice(-8)}</td>
                     <td>
                       {student.role === 'admin' ? (
                         <span className="badge badge-info">Admin</span>
+                      ) : student.role === 'teacher' ? (
+                        <span className="badge badge-success" style={{ background: '#F0F9FF', color: '#0369A1' }}>Teacher</span>
                       ) : student.role === 'organizer' || student.privileges?.isOrganizer ? (
                         <span className="badge badge-warning">Organizer</span>
                       ) : (
@@ -428,8 +461,18 @@ export default function AdminDashboard() {
                 <div key={evt._id} className="event-card" style={{ display: 'flex', flexDirection: 'column' }}>
                   <div className="event-card-body" style={{ padding: '1.5rem', flex: 1 }}>
                     <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
-                      <FileText size={24} style={{ color: 'var(--primary)' }} />
-                      <span className="badge badge-info">{formatDate(evt.date)}</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <FileText size={24} style={{ color: 'var(--primary)' }} />
+                        <span className="badge badge-info">{formatDate(evt.date)}</span>
+                      </div>
+                      <button 
+                        className="btn-icon"
+                        onClick={(e) => { e.stopPropagation(); handleDeleteEvent(evt._id); }}
+                        style={{ color: 'var(--danger)', background: 'transparent', border: 'none', padding: '0.25rem', cursor: 'pointer' }}
+                        title="Delete Event/Report"
+                      >
+                        <Trash2 size={16} />
+                      </button>
                     </div>
                     <h3 className="event-card-title" style={{ fontSize: '1.1rem', marginBottom: '0.5rem' }}>{evt.title}</h3>
                     <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
@@ -457,9 +500,9 @@ export default function AdminDashboard() {
     return (
       <>
         <div>
-          <h1 style={{ fontSize: '1.75rem', fontWeight: 800, marginBottom: '0.2rem' }}>Admin Dashboard</h1>
+          <h1 style={{ fontSize: '1.75rem', fontWeight: 800, marginBottom: '0.2rem' }}>HOD Dashboard</h1>
           <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', marginBottom: '1.5rem' }}>
-            Platform overview and recent administrator alerts.
+            Overview for {user.department || 'Department'} and recent administrator alerts.
           </p>
         </div>
 

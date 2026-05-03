@@ -101,20 +101,6 @@ export default function StudentDashboard() {
     }
   ];
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const res = await API.get('/registrations/my-events');
-        setRegistrations(res.data);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    fetchData();
-  }, []);
-
   // Robust date parser that handles timezones properly
   const getEventEndDateTime = (evt) => {
     if (!evt) return null;
@@ -345,7 +331,7 @@ export default function StudentDashboard() {
                       {r.eventId.title}
                     </h3>
                     <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
-                      Student Entry Ticket
+                      {user?.role === 'teacher' ? 'Faculty Entry Ticket' : 'Student Entry Ticket'}
                     </p>
 
                     {r.qrCode ? (
@@ -388,7 +374,7 @@ export default function StudentDashboard() {
 
       return (
         <div>
-          <h2 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '1rem' }}>My Achievement Certificates</h2>
+          <h2 style={{ fontSize: '1.25rem', fontWeight: 700, marginBottom: '1rem' }}>{user?.role === 'student' ? 'My Achievement Certificates' : 'My Certificates'}</h2>
           {eligibleRegs.length === 0 ? (
             <div className="glass-card-static empty-state" style={{ padding: '3rem 2rem' }}>
               <Award size={48} />
@@ -554,7 +540,7 @@ export default function StudentDashboard() {
               <span style={{ color: '#7C3AED' }}>⚡</span>
             </div>
             <div className="stat-value">{attendedCount * 120 + 50}</div>
-            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Top 5% student</span>
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{user?.role === 'student' ? 'Top 5% student' : 'Top faculty participator'}</span>
           </div>
         </div>
 
@@ -658,7 +644,7 @@ export default function StudentDashboard() {
                   {nextEvent.eventId?.title}
                 </h3>
                 <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginBottom: '1rem' }}>
-                  Student Entry Ticket
+                  {user?.role === 'teacher' ? 'Faculty Entry Ticket' : 'Student Entry Ticket'}
                 </p>
 
                 {nextEvent.qrCode ? (

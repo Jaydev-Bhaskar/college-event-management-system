@@ -66,7 +66,7 @@ export default function Profile() {
               { path: '/admin', label: 'Dashboard', icon: <LayoutDashboard size={18} /> },
               { path: '/admin/requests', label: 'Organizer Requests', icon: <UserPlus size={18} /> },
               { path: '/admin/events', label: 'Events', icon: <CalendarIcon size={18} /> },
-              { path: '/admin/students', label: 'Students', icon: <Users size={18} /> },
+              { path: '/admin/students', label: 'User Directory', icon: <Users size={18} /> },
               { path: '/admin/po-bank', label: 'PO/PSO Bank', icon: <BarChart3 size={18} /> },
               { path: '/admin/reports', label: 'Reports', icon: <FileText size={18} /> },
             ]

@@ -18,7 +18,7 @@ const roleMiddleware = require("../middleware/roleMiddleware");
 router.post("/login", expertLogin);
 
 // POST /api/expert/generate — Generate expert credentials (organizer action)
-router.post("/generate", authMiddleware, roleMiddleware(["organizer", "admin"]), generateExpertCredentials);
+router.post("/generate", authMiddleware, roleMiddleware(["organizer", "admin", "teacher"]), generateExpertCredentials);
 
 // GET /api/expert/dashboard — Expert dashboard (expert JWT)
 router.get("/dashboard", expertAuthMiddleware, getExpertDashboard);
@@ -30,6 +30,6 @@ router.put("/notes", expertAuthMiddleware, updateSessionNotes);
 router.put("/profile", expertAuthMiddleware, updateExpertProfile);
 
 // GET /api/expert/event/:eventId — List experts for an event (organizer view)
-router.get("/event/:eventId", authMiddleware, roleMiddleware(["organizer", "admin"]), getEventExperts);
+router.get("/event/:eventId", authMiddleware, roleMiddleware(["organizer", "admin", "teacher"]), getEventExperts);
 
 module.exports = router;

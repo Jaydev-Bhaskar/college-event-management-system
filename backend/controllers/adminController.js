@@ -11,9 +11,7 @@ exports.getOrganizerRequests = async (req, res) => {
 
     // Department scoping — HOD sees only their department
     if (req.user.department) {
-      const departmentUsers = await User.find({ department: req.user.department }).select("_id");
-      const userIds = departmentUsers.map(u => u._id);
-      filter.userId = { $in: userIds };
+      filter.department = req.user.department;
     }
 
     const requests = await OrganizerRequest.find(filter).populate("userId", "name email department studentId");
@@ -47,6 +45,7 @@ exports.approveRequest = async (req, res) => {
       title: request.title,
       description: request.description,
       category: request.category,
+      department: request.department, // Ensure department is carried over
       date: request.date,
       time: request.time,
       endDate: request.endDate,
@@ -117,14 +116,14 @@ exports.getDashboardStats = async (req, res) => {
     const userDeptFilter = {};
 
     if (req.user.department) {
-      deptFilter.department = req.user.department;
-      userDeptFilter.department = req.user.department;
+      deptFilter.department = { $in: [req.user.department, "Global"] };
+      userDeptFilter.department = req.user.department; // Users remain strictly department-scoped
     }
 
     const totalEvents = await Event.countDocuments(deptFilter);
     const activeEvents = await Event.countDocuments({ ...deptFilter, status: "published" });
     const totalUsers = await User.countDocuments(userDeptFilter);
-    const pendingRequests = await OrganizerRequest.countDocuments({ status: "pending" });
+    const pendingRequests = await OrganizerRequest.countDocuments({ ...deptFilter, status: "pending" });
 
     // Get department users for registration count
     const deptUserIds = await User.find(userDeptFilter).select("_id");
@@ -170,7 +169,7 @@ exports.getAllEvents = async (req, res) => {
     const filter = {};
 
     if (req.user.department) {
-      filter.department = req.user.department;
+      filter.department = { $in: [req.user.department, "Global"] };
     }
 
     const events = await Event.find(filter)
